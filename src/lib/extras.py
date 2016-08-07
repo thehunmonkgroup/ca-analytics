@@ -3,12 +3,16 @@
 #  Exports Circle Anywhere analytical informations
 
 import os
+import shutil
+import subprocess
 import sys
 import errno
 import logging
 import argparse
 from os.path import join as j
 from pprint import pprint, pformat
+
+import collections
 
 rwd = os.path.dirname(os.path.abspath(__file__))
 if rwd not in sys.path:
@@ -163,12 +167,138 @@ def conf_logs(log_name, log_dir=None, console_level=logging.ERROR,
 
 
 def configure_argparse(start_cmd=None):
-    # start_cmd = start_cmd or []
-    # TODO
+    """
+    https://docs.python.org/3/library/argparse.html
+    """
 
-    parser = argparse.ArgumentParser(description='stub',
-                                     # prog=prog,
-                                     add_help=False)
+    start_cmd = '-e 345 5467'.split()
+
+    parser = argparse.ArgumentParser(
+        description='Exports Circle Anywhere analytical information',
+        # prog='ca_analytics.py'
+        add_help=False,
+        # formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        usage='%(prog)s [-e [EVENT_ID [EVENT_ID ...]]] | [-u [USER_ID [USER_ID ...]]] [--start-date DATE] [--end_date DATE] [CONFIGURATION]'
+    )
+
+    # parser.add_argument("-br", "--branch",
+    #                          action='append',
+    #                          # dest='br',
+    #                          type=str,
+    #                          # const=str,
+    #                          # default=[''],
+    #                          # nargs='*',
+    #                          help="Branches to extract svn info from",
+    #                          metavar='BRANCH',
+    #                          )
+
+    stats_opt = parser.add_argument_group('Analytics Options')
+
+    basis = stats_opt.add_mutually_exclusive_group()
+
+    # stats_opt.add_argument('-e', '--'+Setts.EVENT.key,
+    basis.add_argument('-e', '--'+Setts.EVENT.key,
+                           default=Setts.EVENT.default,
+                           help=Setts.EVENT.desc,
+                           metavar='EVENT_ID',
+                           type=int,
+                           nargs='*',
+                           )
+
+    basis.add_argument('-u', '--'+Setts.USER.key,
+    # stats_opt.add_argument('-u', '--'+Setts.USER.key,
+                           default=Setts.USER.default,
+                           help=Setts.USER.desc,
+                           metavar='USER_ID',
+                           type=int,
+                           nargs='*',
+                           )
+
+    stats_opt.add_argument('--'+Setts.START_DATE.key,
+                           default=Setts.START_DATE.default,
+                           help=Setts.START_DATE.desc,
+                           metavar='DATE',
+                           type=str,
+                           )
+
+    stats_opt.add_argument('--'+Setts.END_DATE.key,
+                           default=Setts.END_DATE.default,
+                           help=Setts.END_DATE.desc,
+                           metavar='DATE',
+                           type=str,
+                           )
+
+    conn_opt = parser.add_argument_group('Connection Optionss')
+
+    conn_opt.add_argument("--"+Setts.COUCH_STRING.key,
+                          type=str,
+                          default=Setts.COUCH_STRING.default,
+                          help=Setts.COUCH_STRING.desc,
+                          metavar='URL',
+                          )
+
+    conn_opt.add_argument("--"+Setts.COUCH_DATABASE.key,
+                          type=str,
+                          default=Setts.COUCH_DATABASE.default,
+                          help=Setts.COUCH_DATABASE.desc,
+                          metavar='NAME',
+                          )
+
+    conn_opt.add_argument("--"+Setts.MONGO_STRING.key,
+                          type=str,
+                          default=Setts.MONGO_STRING.default,
+                          help=Setts.MONGO_STRING.desc,
+                          metavar='URI',
+                          )
+
+    conn_opt.add_argument("--"+Setts.MONGO_DATABASE.key,
+                          type=str,
+                          default=Setts.MONGO_DATABASE.default,
+                          help=Setts.MONGO_DATABASE.desc,
+                          metavar='NAME',
+                          )
+
+    conf_opt = parser.add_argument_group('Configuration')
+
+    conf_opt.add_argument("-o", "--"+Setts.OUT_DEST.key,
+                          type=str,
+                          default=Setts.OUT_DEST.default,
+                          help=Setts.OUT_DEST.desc,
+                          metavar='FILE',
+                          )
+
+    conf_opt.add_argument("-c", "--"+Setts.CFG_PATH.key,
+                          type=str,
+                          # dest='cfg',
+                          default=Setts.CFG_PATH.default,
+                          help=Setts.CFG_PATH.desc,
+                          metavar='FILE',
+                          )
+
+    conf_opt.add_argument("-l", "--"+Setts.LOG_PATH.key,
+                          type=str,
+                          default=Setts.LOG_PATH.default,
+                          help=Setts.LOG_PATH.desc,
+                          metavar='FILE',
+                          )
+
+    conf_opt.add_argument('-h', '--help',
+                          action='help',
+                          default=argparse.SUPPRESS,
+                          help='Print this help text and exit',
+                          )
+
+    args = parser.parse_args(args=start_cmd)
+
+    return args, parser
+
+
+def configure_argparse2(start_cmd=None):
+
+    parser = argparse.ArgumentParser(
+        description='Exports Circle Anywhere analytical information',
+        # prog='ca_analytics.py'
+    )
 
     # parser.add_argument("-m", "--mount",
     #                     action='append',
@@ -199,7 +329,7 @@ def configure_argparse(start_cmd=None):
 
     args = parser.parse_args(args=start_cmd)
 
-    return args, parser.format_help()
+    return args, parser
 
 
 class Setts:
@@ -231,62 +361,65 @@ class Setts:
         def __get__(self, cls, owner):
             return self.fget.__get__(None, owner)()
 
+    cfg = {}
     # Strings values, can be stored in user.cfg
 
     EVENT = Option(
         'event',
         default=[],
-        desc='Event ids')
+        desc='Events ids to report')
 
     USER = Option(
         'user',
         default=[],
-        desc='User ids')
+        desc='Users ids to report')
+
+    START_DATE = Option(
+        'start-date',
+        default='',
+        desc='Give starting date from which to report')
+
+    END_DATE = Option(
+        'end_date',
+        default='',
+        desc="The lower bound for the report's date")
+
+    # Connection settings
+    COUCH_STRING = Option(
+        'couchdb-connection-string',
+        default='http://127.0.0.1:5984/',
+        desc='CouchDB connection string [Default: %(default)s]')
+
+    COUCH_DATABASE = Option(
+        'couchdb-database',
+        default='circleanywhere',
+        desc='Database to be used by CouchDB [Default: %(default)s]')
+
+    MONGO_STRING = Option(
+        'mongodb-connection-string',
+        default='mongodb://127.0.0.1:27017',
+        desc='MongoDB connection string [Default: %(default)s]')
+
+    MONGO_DATABASE = Option(
+        'mongo-database',
+        default='circleanywhere',
+        desc='Database to be used by MongoDB [Default: %(default)s]')
+
+    # Script options
+    OUT_DEST = Option(
+        'output-destination',
+        default='',
+        desc='File path to where the report should be saved [Default: screen]')
 
     CFG_PATH = Option(
         'cfg',
         default='ca_analytics.cfg',
-        desc="Path to cfg file. [Default: '$(pwd)/ca_analytics.cfg']")
+        desc="Path to cfg file [Default: '$(pwd)/%(default)s']")
 
     LOG_PATH = Option(
         'log',
         default='',
         desc='Path to log file')
-
-    OUT_SEST = Option(
-        'out_dest',
-        default='',
-        desc='Analysis output file. [Default: terminal]')
-
-    START_DATE = Option(
-        'start_date',
-        default='',
-        desc='beginning: empty [Default: empty]')
-
-    END_DATE = Option(
-        'end_date',
-        default='',
-        desc='today: empty [Default: empty]')
-
-    COUCH_STRING = Option(
-        'couchdb-connection-string',
-        default='http://127.0.0.1:5984/',
-        desc='CouchDB connection string')
-
-    COUCH_DATABASE = Option(
-        'couchdb-database',
-        default='circleanywhere',
-        desc='Database to be used by CouchDB')
-
-    MONGO_STRING = Option(
-        'mongodb-connection-string',
-        default='mongodb://127.0.0.1:27017',
-        desc='MongoDB connection string')
-
-    MONGO_DATABASE = Option(
-        'mongo-database',
-        default='circleanywhere',
-        desc='Database to be used by MongoDB')
 
     @ClassProperty
     @classmethod
@@ -301,7 +434,8 @@ class Setts:
 
     @classmethod
     def initialize(cls, cfg=None):
-        cls.cfg = cfg
+        if cfg is not None:
+            cls.cfg = cfg
         for opt in cls.opt_list:
             if opt.value is None:
                 cfg_val = cls.cfg.get(opt.key, None)

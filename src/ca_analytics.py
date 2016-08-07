@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # (c) 2016 Alek
-#  Exports Circle Anywhere analytical informations
+#  Exports Circle Anywhere analytical information
 
 import os
 import re
@@ -21,11 +21,21 @@ if rwd not in sys.path:
 
 log = logging.getLogger()
 
+try:
+    from lib.extras import configure_argparse
+except Exception as e:
+    log.warning(e)
+
 
 def main():
-    pass
+    args, parser = configure_argparse()
+    print(parser.format_help())
+    print('='*80)
+    print(args)
 
-version = {'y': 2016, 'm': 8, 'd': 6}
+
+
+version = {'y': 2016, 'm': 8, 'd': 7}
 __version__ = '{y}.{m}.{d}'.format(**version)
 
 if __name__ == '__main__':
