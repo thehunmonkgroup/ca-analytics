@@ -3,22 +3,18 @@
 #  Exports Circle Anywhere analytical informations
 
 import os
-import shutil
-import subprocess
 import sys
 import errno
-import logging
+import ruamel.yaml as yaml
 import argparse
+import logging
 from os.path import join as j
-from pprint import pprint, pformat
-
-import collections
 
 rwd = os.path.dirname(os.path.abspath(__file__))
 if rwd not in sys.path:
     sys.path.append(rwd)
 
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 
 
 def norm_path(path, mkdir=True, mkfile=False, logger=None):
@@ -223,7 +219,7 @@ def configure_argparse(start_cmd=None):
                            type=str,
                            )
 
-    conn_opt = parser.add_argument_group('Connection Optionss')
+    conn_opt = parser.add_argument_group('Connection Options')
 
     conn_opt.add_argument('--'+Setts.COUCH_STRING.key,
                           type=str,
@@ -288,45 +284,6 @@ def configure_argparse(start_cmd=None):
     return args, parser
 
 
-def configure_argparse2(start_cmd=None):
-
-    parser = argparse.ArgumentParser(
-        description='Exports Circle Anywhere analytical information',
-        # prog='ca_analytics.py'
-    )
-
-    # parser.add_argument('-m', '--mount',
-    #                     action='append',
-    #                     type=str,
-    #                     default=[],
-    #                     help='Mount given disk(s). Also valid *all*.',
-    #                     metavar='NAME')
-    # parser.add_argument('-u', '--umount',
-    #                     action='append',
-    #                     type=str,
-    #                     default=[],
-    #                     help='Unmount disk(s). Also valid *all*.',
-    #                     metavar='NAME')
-
-    parser.add_argument('-c', '--cfg',
-                        type=str,
-                        dest='cfg',
-                        default=norm_path('${HOME}/case/conf/${USER}.cfg'),
-                        help='Dir for log file [Default: '
-                             '"${HOME}/case/conf/${USER}.cfg"]',
-                        metavar='FILE')
-
-    parser.add_argument('-l', '--log',
-                        type=str,
-                        default=norm_path('${HOME}/case/log'),
-                        help='Dir for log file [Default: "${HOME}/case/log"]',
-                        metavar='DIR')
-
-    args = parser.parse_args(args=start_cmd)
-
-    return args, parser
-
-
 class Setts:
     # If args are validated, the default option should always be set
     class Option:
@@ -356,7 +313,7 @@ class Setts:
         def __get__(self, cls, owner):
             return self.fget.__get__(None, owner)()
 
-    cfg = {}
+    _cfg = {}
     # Strings values, can be stored in user.cfg
 
     EVENT = Option(
@@ -416,6 +373,17 @@ class Setts:
         default='',
         desc='Path to log file')
 
+    @classmethod
+    def get_config(cls, f_pth=''):
+        """
+        Get cfg dict from yaml file
+        """
+        try:
+            with open(f_pth) as f:
+                return yaml.load(f)
+        except FileNotFoundError as e:
+            log.debug(e)
+
     @ClassProperty
     @classmethod
     def opt_list(cls):
@@ -427,13 +395,18 @@ class Setts:
         return [Setts.__dict__[x] for x in Setts.__dict__ if
                 condition_to_be_opt(x)]
 
+    @ClassProperty
+    @classmethod
+    def cfg(cls):
+        return {opt.key: opt.value for opt in cls.opt_list}
+
     @classmethod
     def initialize(cls, cfg=None):
         if cfg is not None:
-            cls.cfg = cfg
+            cls._cfg.update(cfg)
         for opt in cls.opt_list:
             if opt.value is None:
-                cfg_val = cls.cfg.get(opt.key, None)
+                cfg_val = cls._cfg.get(opt.key, None)
                 opt.value = opt.default if cfg_val is None else cfg_val
 
 
