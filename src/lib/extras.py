@@ -317,7 +317,7 @@ class Setts:
         def __get__(self, cls, owner):
             return self.fget.__get__(None, owner)()
 
-    _cfg = {}
+    # _cfg = {}
     # Strings values, can be stored in user.cfg
 
     EVENT = Option(
@@ -421,10 +421,13 @@ class Setts:
         for opt in cls.opt_list:
             cfg_val = cfg.get(opt.key, None)
 
-            if cfg_val is None:
+            if cfg_val is None and opt.value is None:
+                # Start
                 opt.value = opt.default
+            elif cfg_val is None:
+                pass
             else:
-                opt.val = cfg_val
+                opt.value = cfg_val
 
 
 Setts.refresh()

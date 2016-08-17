@@ -43,6 +43,7 @@ def main():
     # Load user args
     Setts.refresh(cfg=args.__dict__)
     print(args)
+    pprint(Setts.cfg)
 
 
 version = {'y': 2016, 'm': 8, 'd': 17}
