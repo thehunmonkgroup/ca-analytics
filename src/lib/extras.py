@@ -177,8 +177,7 @@ def configure_argparse(start_cmd=None):
         description='Exports Circle Anywhere analytical information',
         # prog='ca_analytics.py'
         add_help=False,
-        # formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        usage='%(prog)s [-e [EVENT_ID [EVENT_ID ...]]] | [-u [USER_ID [USER_ID ...]]] [--start-date DATE] [--end_date DATE] [CONFIGURATION]'
+        usage='%(prog)s [-e [EVENT_ID [EVENT_ID ...]]] [-u [USER_ID [USER_ID ...]]] [--start-date DATE] [--end_date DATE] [CONFIGURATION]'
     )
 
     # parser.add_argument("-br", "--branch",
@@ -194,10 +193,7 @@ def configure_argparse(start_cmd=None):
 
     stats_opt = parser.add_argument_group('Analytics Options')
 
-    basis = stats_opt.add_mutually_exclusive_group()
-
-    # stats_opt.add_argument('-e', '--'+Setts.EVENT.key,
-    basis.add_argument('-e', '--'+Setts.EVENT.key,
+    stats_opt.add_argument('-e', '--'+Setts.EVENT.key,
                            default=Setts.EVENT.default,
                            help=Setts.EVENT.desc,
                            metavar='EVENT_ID',
@@ -205,8 +201,7 @@ def configure_argparse(start_cmd=None):
                            nargs='*',
                            )
 
-    basis.add_argument('-u', '--'+Setts.USER.key,
-    # stats_opt.add_argument('-u', '--'+Setts.USER.key,
+    stats_opt.add_argument('-u', '--'+Setts.USER.key,
                            default=Setts.USER.default,
                            help=Setts.USER.desc,
                            metavar='USER_ID',
@@ -230,28 +225,28 @@ def configure_argparse(start_cmd=None):
 
     conn_opt = parser.add_argument_group('Connection Optionss')
 
-    conn_opt.add_argument("--"+Setts.COUCH_STRING.key,
+    conn_opt.add_argument('--'+Setts.COUCH_STRING.key,
                           type=str,
                           default=Setts.COUCH_STRING.default,
                           help=Setts.COUCH_STRING.desc,
                           metavar='URL',
                           )
 
-    conn_opt.add_argument("--"+Setts.COUCH_DATABASE.key,
+    conn_opt.add_argument('--'+Setts.COUCH_DATABASE.key,
                           type=str,
                           default=Setts.COUCH_DATABASE.default,
                           help=Setts.COUCH_DATABASE.desc,
                           metavar='NAME',
                           )
 
-    conn_opt.add_argument("--"+Setts.MONGO_STRING.key,
+    conn_opt.add_argument('--'+Setts.MONGO_STRING.key,
                           type=str,
                           default=Setts.MONGO_STRING.default,
                           help=Setts.MONGO_STRING.desc,
                           metavar='URI',
                           )
 
-    conn_opt.add_argument("--"+Setts.MONGO_DATABASE.key,
+    conn_opt.add_argument('--'+Setts.MONGO_DATABASE.key,
                           type=str,
                           default=Setts.MONGO_DATABASE.default,
                           help=Setts.MONGO_DATABASE.desc,
@@ -260,14 +255,14 @@ def configure_argparse(start_cmd=None):
 
     conf_opt = parser.add_argument_group('Configuration')
 
-    conf_opt.add_argument("-o", "--"+Setts.OUT_DEST.key,
+    conf_opt.add_argument('-o', '--'+Setts.OUT_DEST.key,
                           type=str,
                           default=Setts.OUT_DEST.default,
                           help=Setts.OUT_DEST.desc,
                           metavar='FILE',
                           )
 
-    conf_opt.add_argument("-c", "--"+Setts.CFG_PATH.key,
+    conf_opt.add_argument('-c', '--'+Setts.CFG_PATH.key,
                           type=str,
                           # dest='cfg',
                           default=Setts.CFG_PATH.default,
@@ -275,7 +270,7 @@ def configure_argparse(start_cmd=None):
                           metavar='FILE',
                           )
 
-    conf_opt.add_argument("-l", "--"+Setts.LOG_PATH.key,
+    conf_opt.add_argument('-l', '--'+Setts.LOG_PATH.key,
                           type=str,
                           default=Setts.LOG_PATH.default,
                           help=Setts.LOG_PATH.desc,
@@ -300,31 +295,31 @@ def configure_argparse2(start_cmd=None):
         # prog='ca_analytics.py'
     )
 
-    # parser.add_argument("-m", "--mount",
+    # parser.add_argument('-m', '--mount',
     #                     action='append',
     #                     type=str,
     #                     default=[],
-    #                     help="Mount given disk(s). Also valid *all*.",
+    #                     help='Mount given disk(s). Also valid *all*.',
     #                     metavar='NAME')
-    # parser.add_argument("-u", "--umount",
+    # parser.add_argument('-u', '--umount',
     #                     action='append',
     #                     type=str,
     #                     default=[],
     #                     help='Unmount disk(s). Also valid *all*.',
     #                     metavar='NAME')
 
-    parser.add_argument("-c", "--cfg",
+    parser.add_argument('-c', '--cfg',
                         type=str,
                         dest='cfg',
                         default=norm_path('${HOME}/case/conf/${USER}.cfg'),
-                        help="Dir for log file [Default: "
-                             "'${HOME}/case/conf/${USER}.cfg']",
+                        help='Dir for log file [Default: '
+                             '"${HOME}/case/conf/${USER}.cfg"]',
                         metavar='FILE')
 
-    parser.add_argument("-l", "--log",
+    parser.add_argument('-l', '--log',
                         type=str,
                         default=norm_path('${HOME}/case/log'),
-                        help="Dir for log file [Default: '${HOME}/case/log']",
+                        help='Dir for log file [Default: "${HOME}/case/log"]',
                         metavar='DIR')
 
     args = parser.parse_args(args=start_cmd)
@@ -347,11 +342,11 @@ class Setts:
             self.value = value
 
         def __repr__(self):
-            return "Option(key=%s, " \
-                   "value=%s, " \
-                   "default=%s, " \
-                   "desc='%s', " \
-                   "callback=%s)" % (self.key, self.value, self.default,
+            return 'Option(key=%s, ' \
+                   'value=%s, ' \
+                   'default=%s, ' \
+                   'desc="%s", ' \
+                   'callback=%s)' % (self.key, self.value, self.default,
                                      self.desc, self.callback)
 
         def __str__(self):
@@ -414,7 +409,7 @@ class Setts:
     CFG_PATH = Option(
         'cfg',
         default='ca_analytics.cfg',
-        desc="Path to cfg file [Default: '$(pwd)/%(default)s']")
+        desc='Path to cfg file [Default: "$(pwd)/%(default)s"]')
 
     LOG_PATH = Option(
         'log',
