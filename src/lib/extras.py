@@ -167,8 +167,6 @@ def configure_argparse(start_cmd=None):
     https://docs.python.org/3/library/argparse.html
     """
 
-    start_cmd = '-e 345 5467'.split()
-
     parser = argparse.ArgumentParser(
         description='Exports Circle Anywhere analytical information',
         # prog='ca_analytics.py'
@@ -190,7 +188,7 @@ def configure_argparse(start_cmd=None):
     stats_opt = parser.add_argument_group('Analytics Options')
 
     stats_opt.add_argument('-e', '--'+Setts.EVENT.key,
-                           default=Setts.EVENT.default,
+                           # default=Setts.EVENT.default,
                            help=Setts.EVENT.desc,
                            metavar='EVENT_ID',
                            type=int,
@@ -198,7 +196,7 @@ def configure_argparse(start_cmd=None):
                            )
 
     stats_opt.add_argument('-u', '--'+Setts.USER.key,
-                           default=Setts.USER.default,
+                           # default=Setts.USER.default,
                            help=Setts.USER.desc,
                            metavar='USER_ID',
                            type=int,
@@ -206,14 +204,14 @@ def configure_argparse(start_cmd=None):
                            )
 
     stats_opt.add_argument('--'+Setts.START_DATE.key,
-                           default=Setts.START_DATE.default,
+                           # default=Setts.START_DATE.default,
                            help=Setts.START_DATE.desc,
                            metavar='DATE',
                            type=str,
                            )
 
     stats_opt.add_argument('--'+Setts.END_DATE.key,
-                           default=Setts.END_DATE.default,
+                           # default=Setts.END_DATE.default,
                            help=Setts.END_DATE.desc,
                            metavar='DATE',
                            type=str,
@@ -223,28 +221,28 @@ def configure_argparse(start_cmd=None):
 
     conn_opt.add_argument('--'+Setts.COUCH_STRING.key,
                           type=str,
-                          default=Setts.COUCH_STRING.default,
+                          # default=Setts.COUCH_STRING.default,
                           help=Setts.COUCH_STRING.desc,
                           metavar='URL',
                           )
 
     conn_opt.add_argument('--'+Setts.COUCH_DATABASE.key,
                           type=str,
-                          default=Setts.COUCH_DATABASE.default,
+                          # default=Setts.COUCH_DATABASE.default,
                           help=Setts.COUCH_DATABASE.desc,
                           metavar='NAME',
                           )
 
     conn_opt.add_argument('--'+Setts.MONGO_STRING.key,
                           type=str,
-                          default=Setts.MONGO_STRING.default,
+                          # default=Setts.MONGO_STRING.default,
                           help=Setts.MONGO_STRING.desc,
                           metavar='URI',
                           )
 
     conn_opt.add_argument('--'+Setts.MONGO_DATABASE.key,
                           type=str,
-                          default=Setts.MONGO_DATABASE.default,
+                          # default=Setts.MONGO_DATABASE.default,
                           help=Setts.MONGO_DATABASE.desc,
                           metavar='NAME',
                           )
@@ -253,7 +251,7 @@ def configure_argparse(start_cmd=None):
 
     conf_opt.add_argument('-o', '--'+Setts.OUT_DEST.key,
                           type=str,
-                          default=Setts.OUT_DEST.default,
+                          # default=Setts.OUT_DEST.default,
                           help=Setts.OUT_DEST.desc,
                           metavar='FILE',
                           )
@@ -261,14 +259,20 @@ def configure_argparse(start_cmd=None):
     conf_opt.add_argument('-c', '--'+Setts.CFG_PATH.key,
                           type=str,
                           # dest='cfg',
-                          default=Setts.CFG_PATH.default,
+                          # default=Setts.CFG_PATH.default,
                           help=Setts.CFG_PATH.desc,
                           metavar='FILE',
                           )
 
+    conf_opt.add_argument('--sample',
+                          action='store_true',
+                          help='Print sample YAML config file',
+                          # metavar='FILE',
+                          )
+
     conf_opt.add_argument('-l', '--'+Setts.LOG_PATH.key,
                           type=str,
-                          default=Setts.LOG_PATH.default,
+                          # default=Setts.LOG_PATH.default,
                           help=Setts.LOG_PATH.desc,
                           metavar='FILE',
                           )
@@ -327,7 +331,7 @@ class Setts:
         desc='Users ids to report')
 
     START_DATE = Option(
-        'start-date',
+        'start_date',
         default='',
         desc='Give starting date from which to report')
 
@@ -338,28 +342,28 @@ class Setts:
 
     # Connection settings
     COUCH_STRING = Option(
-        'couchdb-connection-string',
+        'couchdb_connection_string',
         default='http://127.0.0.1:5984/',
         desc='CouchDB connection string [Default: %(default)s]')
 
     COUCH_DATABASE = Option(
-        'couchdb-database',
+        'couchdb_database',
         default='circleanywhere',
         desc='Database to be used by CouchDB [Default: %(default)s]')
 
     MONGO_STRING = Option(
-        'mongodb-connection-string',
+        'mongodb_connection_string',
         default='mongodb://127.0.0.1:27017',
         desc='MongoDB connection string [Default: %(default)s]')
 
     MONGO_DATABASE = Option(
-        'mongo-database',
+        'mongo_database',
         default='circleanywhere',
         desc='Database to be used by MongoDB [Default: %(default)s]')
 
     # Script options
     OUT_DEST = Option(
-        'output-destination',
+        'output_destination',
         default='',
         desc='File path to where the report should be saved [Default: screen]')
 
@@ -401,13 +405,26 @@ class Setts:
         return {opt.key: opt.value for opt in cls.opt_list}
 
     @classmethod
-    def initialize(cls, cfg=None):
-        if cfg is not None:
-            cls._cfg.update(cfg)
+    def refresh(cls, cfg=None, f_pth=''):
+        """
+        Refreshes app setts with yaml config file or cfg dict.
+          Content of yaml cfg file will overwrite cfg dict!
+
+        :version: 2016.08.17
+        """
+        if f_pth:
+            log.debug('Loading (presumably) YAML file: "%s"', f_pth)
+            cfg = cls.get_config(f_pth=f_pth)
+        if not cfg:
+            cfg = {}
+
         for opt in cls.opt_list:
-            if opt.value is None:
-                cfg_val = cls._cfg.get(opt.key, None)
-                opt.value = opt.default if cfg_val is None else cfg_val
+            cfg_val = cfg.get(opt.key, None)
+
+            if cfg_val is None:
+                opt.value = opt.default
+            else:
+                opt.val = cfg_val
 
 
-Setts.initialize()
+Setts.refresh()
