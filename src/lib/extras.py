@@ -2,19 +2,57 @@
 # (c) 2016 Alek
 #  Exports Circle Anywhere analytical informations
 
-import os
-import sys
-import errno
-import ruamel.yaml as yaml
 import argparse
+import collections
+import errno
 import logging
+import os
 from os.path import join as j
 
-rwd = os.path.dirname(os.path.abspath(__file__))
-if rwd not in sys.path:
-    sys.path.append(rwd)
+import ruamel.yaml as yaml
 
 log = logging.getLogger(__name__)
+
+
+class CaPrinter:
+    data = None
+    _lines = None
+    sep = '-' * 25
+
+    def __init__(self, data):
+        self.data = data
+
+    @property
+    def lines(self):
+        if self._lines is None:
+            self._lines = self._prepare_output()
+        return self._lines
+
+    def _prepare_output(self):
+        out = []
+        tmp = collections.defaultdict(dict)
+
+        for line in self.data:
+            tmp[line['eventId']][line['userId']] = line['timestamp']
+
+        for event_id, users in sorted(tmp.items()):
+            out.append(self.sep)
+            out.append("Event ID: %s" % event_id)
+            for user_id, timestamp in sorted(users.items(),
+                                             key=lambda x: x[0]):
+                out.append("    %s: %s" % (user_id, timestamp))
+            out.append(self.sep)
+        return out
+
+    def write_terminal(self):
+        for line in self.lines:
+            print(line)
+
+    def write_file(self, f_path):
+        with open(f_path, 'w') as f:
+            print('* Writing to file: "%s"' % f_path)
+            f.write('\n'.join(self.lines))
+            print('* Done')
 
 
 def norm_path(path, mkdir=True, mkfile=False, logger=None):
@@ -60,7 +98,8 @@ def norm_path(path, mkdir=True, mkfile=False, logger=None):
 
     if logger is None:
         logger = logging.getLogger('dummy')
-    logger.debug('Normalizing [%s] with %s', path, {'mkdir': mkdir, 'mkfile': mkfile})
+    logger.debug('Normalizing [%s] with %s', path,
+                 {'mkdir': mkdir, 'mkfile': mkfile})
     if not isinstance(path, str):
         path = j(*path)
     path_org = path
@@ -156,7 +195,8 @@ def conf_logs(log_name, log_dir=None, console_level=logging.ERROR,
     dummy.addHandler(logging.NullHandler())
     dummy.propagate = False
 
-    msg = 'Logs configured with: console_level: "%s"%s%s' % (console_level, msg_file, msg_esb)
+    msg = 'Logs configured with: console_level: "%s"%s%s' % (
+    console_level, msg_file, msg_esb)
     if print_dest:
         print(msg)
     log.debug(msg)
@@ -164,30 +204,32 @@ def conf_logs(log_name, log_dir=None, console_level=logging.ERROR,
 
 def configure_argparse(start_cmd=None):
     """
-    https://docs.python.org/3/library/argparse.html
+    :return
+    Namespace(
+        cfg=None,
+        couchdb_connection_string=None,
+        couchdb_database=None,
+        end_date=None,
+        event=None,
+        log=None,
+        mongo_database=None,
+        mongodb_connection_string=None,
+        output_destination=None,
+        sample=False,
+        start_date=None,
+        user=None
+    )
     """
 
     parser = argparse.ArgumentParser(
         description='Exports Circle Anywhere analytical information',
-        # prog='ca_analytics.py'
         add_help=False,
         usage='%(prog)s [-e [EVENT_ID [EVENT_ID ...]]] [-u [USER_ID [USER_ID ...]]] [--start-date DATE] [--end_date DATE] [CONFIGURATION]'
     )
 
-    # parser.add_argument("-br", "--branch",
-    #                          action='append',
-    #                          # dest='br',
-    #                          type=str,
-    #                          # const=str,
-    #                          # default=[''],
-    #                          # nargs='*',
-    #                          help="Branches to extract svn info from",
-    #                          metavar='BRANCH',
-    #                          )
-
     stats_opt = parser.add_argument_group('Analytics Options')
 
-    stats_opt.add_argument('-e', '--'+Setts.EVENT.key,
+    stats_opt.add_argument('-e', '--' + Setts.EVENT.key,
                            # default=Setts.EVENT.default,
                            help=Setts.EVENT.desc,
                            metavar='EVENT_ID',
@@ -195,7 +237,7 @@ def configure_argparse(start_cmd=None):
                            nargs='*',
                            )
 
-    stats_opt.add_argument('-u', '--'+Setts.USER.key,
+    stats_opt.add_argument('-u', '--' + Setts.USER.key,
                            # default=Setts.USER.default,
                            help=Setts.USER.desc,
                            metavar='USER_ID',
@@ -203,14 +245,14 @@ def configure_argparse(start_cmd=None):
                            nargs='*',
                            )
 
-    stats_opt.add_argument('--'+Setts.START_DATE.key,
+    stats_opt.add_argument('--' + Setts.START_DATE.key,
                            # default=Setts.START_DATE.default,
                            help=Setts.START_DATE.desc,
                            metavar='DATE',
                            type=str,
                            )
 
-    stats_opt.add_argument('--'+Setts.END_DATE.key,
+    stats_opt.add_argument('--' + Setts.END_DATE.key,
                            # default=Setts.END_DATE.default,
                            help=Setts.END_DATE.desc,
                            metavar='DATE',
@@ -219,28 +261,28 @@ def configure_argparse(start_cmd=None):
 
     conn_opt = parser.add_argument_group('Connection Options')
 
-    conn_opt.add_argument('--'+Setts.COUCH_STRING.key,
+    conn_opt.add_argument('--' + Setts.COUCH_STRING.key,
                           type=str,
                           # default=Setts.COUCH_STRING.default,
                           help=Setts.COUCH_STRING.desc,
                           metavar='URL',
                           )
 
-    conn_opt.add_argument('--'+Setts.COUCH_DATABASE.key,
+    conn_opt.add_argument('--' + Setts.COUCH_DATABASE.key,
                           type=str,
                           # default=Setts.COUCH_DATABASE.default,
                           help=Setts.COUCH_DATABASE.desc,
                           metavar='NAME',
                           )
 
-    conn_opt.add_argument('--'+Setts.MONGO_STRING.key,
+    conn_opt.add_argument('--' + Setts.MONGO_STRING.key,
                           type=str,
                           # default=Setts.MONGO_STRING.default,
                           help=Setts.MONGO_STRING.desc,
                           metavar='URI',
                           )
 
-    conn_opt.add_argument('--'+Setts.MONGO_DATABASE.key,
+    conn_opt.add_argument('--' + Setts.MONGO_DATABASE.key,
                           type=str,
                           # default=Setts.MONGO_DATABASE.default,
                           help=Setts.MONGO_DATABASE.desc,
@@ -249,14 +291,14 @@ def configure_argparse(start_cmd=None):
 
     conf_opt = parser.add_argument_group('Configuration')
 
-    conf_opt.add_argument('-o', '--'+Setts.OUT_DEST.key,
+    conf_opt.add_argument('-o', '--' + Setts.OUT_DEST.key,
                           type=str,
                           # default=Setts.OUT_DEST.default,
                           help=Setts.OUT_DEST.desc,
                           metavar='FILE',
                           )
 
-    conf_opt.add_argument('-c', '--'+Setts.CFG_PATH.key,
+    conf_opt.add_argument('-c', '--' + Setts.CFG_PATH.key,
                           type=str,
                           # dest='cfg',
                           # default=Setts.CFG_PATH.default,
@@ -270,7 +312,7 @@ def configure_argparse(start_cmd=None):
                           # metavar='FILE',
                           )
 
-    conf_opt.add_argument('-l', '--'+Setts.LOG_PATH.key,
+    conf_opt.add_argument('-l', '--' + Setts.LOG_PATH.key,
                           type=str,
                           # default=Setts.LOG_PATH.default,
                           help=Setts.LOG_PATH.desc,
@@ -376,6 +418,15 @@ class Setts:
         'log',
         default='',
         desc='Path to log file')
+
+    # Program stuff
+    DB_MONGO = Option(
+        'db_mongo',
+        desc='Reference to our mongoDB')
+
+    DB_COUCH = Option(
+        'db_couch',
+        desc='Reference to our couchDB')
 
     @classmethod
     def get_config(cls, f_pth=''):

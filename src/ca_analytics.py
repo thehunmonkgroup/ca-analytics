@@ -2,19 +2,15 @@
 # (c) 2016 Alek
 #  Exports Circle Anywhere analytical information
 
-import os
-import re
-import sys
-import json
-import time
-import couchdb
 import logging
-import ruamel.yaml as yaml
-import datetime
-import collections
+import os
+import sys
 from os.path import join as j
-from pymongo import MongoClient
-from pprint import pprint, pformat
+
+import ruamel.yaml as yaml
+
+from lib.db_engine import init_db
+from lib.extras import configure_argparse, Setts, CaPrinter
 
 rwd = os.path.dirname(os.path.abspath(__file__))
 if rwd not in sys.path:
@@ -22,14 +18,18 @@ if rwd not in sys.path:
 
 log = logging.getLogger(__name__)
 
-try:
-    from lib.extras import configure_argparse, Setts
-except Exception as e:
-    log.warning(e)
+
+def evaluate_arguments(args):
+    events = Setts.DB_MONGO.value.get_events()
+    printer = CaPrinter(data=events)
+    if args.output_destination:
+        printer.write_file(f_path=args.output_destination)
+    else:
+        printer.write_terminal()
 
 
 def main():
-    args, parser = configure_argparse(start_cmd='-e 345 5467 --cfg /some/path --couchdb_connection_string some:conn-string.wx'.split())
+    args, parser = configure_argparse(start_cmd=None)
 
     if args.sample:
         print('# Program defaults. Comment unnecessary')
@@ -42,12 +42,16 @@ def main():
     Setts.refresh(f_pth=args.cfg)
     # Load user args
     Setts.refresh(cfg=args.__dict__)
-    print(args)
-    pprint(Setts.cfg)
+    init_db()
+    evaluate_arguments(args)
 
 
-version = {'y': 2016, 'm': 8, 'd': 17}
+version = {'y': 2016, 'm': 8, 'd': 18}
 __version__ = '{y}.{m}.{d}'.format(**version)
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as e:
+        log.exception(e)
+        sys.exit(1)
