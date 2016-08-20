@@ -12,20 +12,30 @@ log = logging.getLogger(__name__)
 
 
 class MongoData:
-    _base = {'action': 'join', 'message': 'events'}
+    _filter_join_events = {'action': 'join', 'message': 'events'}
 
     def __init__(self, connection_string, database_name):
         self._client = MongoClient(connection_string)
         self.db_mongo = self._client[database_name]
 
-    def get_events(self, ids=None):
-        question = self.base
+    def get_events(self, event_ids=None):
+        """
+        Get data about specific events.
+
+        :type event_ids: list of eventIds
+        :return:
+        """
+        question = self.filter_join_events
+
+        if event_ids is not None:
+            question["eventId"] = self._search_in(event_ids)
+
         ret = self.db_mongo.analytics.find(question)
         return ret
 
     @property
-    def base(self):
-        return self._base.copy()
+    def filter_join_events(self):
+        return self._filter_join_events.copy()
 
     @staticmethod
     def _search_in(iterable, cast=int):

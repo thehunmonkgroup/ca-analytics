@@ -15,15 +15,28 @@ log = logging.getLogger(__name__)
 
 
 class CaPrinter:
-    data = None
+    _data = None
     _lines = None
-    sep = '-' * 25
+    _sep = '-' * 25
 
     def __init__(self, data):
-        self.data = data
+        """
+        Here is raw data. During printing/writing to file it's converted in
+        `_prepare_output`.:
+
+        :param data: json list/db_cursor
+            {'eventId': 286, 'message': 'events', 'connectedUsers': 0, 'timestamp': '2016-03-19T03:27:14.150Z', 'userId': '112349864121259291250', 'level': 'info', '_id': ObjectId('57a3a39600c88030ca3faf88'), 'action': 'join'}
+            {'eventId': 286, 'message': 'events', 'connectedUsers': 1, 'timestamp': '2016-03-19T03:27:27.177Z', 'userId': '116488113102013485647', 'level': 'info', '_id': ObjectId('57a3a39600c88030ca3faf98'), 'action': 'join'}
+            {'eventId': 266, 'message': 'events', 'connectedUsers': 0, 'timestamp': '2016-03-19T04:38:34.221Z', 'userId': '114498861474704307604', 'level': 'info', '_id': ObjectId('57a3a39600c88030ca3fb10e'), 'action': 'join'}
+            {'eventId': 292, 'message': 'events', 'connectedUsers': 1, 'timestamp': '2016-03-19T08:59:37.600Z', 'userId': '108611793445678484173', 'level': 'info', '_id': ObjectId('57a3a39600c88030ca3fb3cc'), 'action'
+        """
+        self._data = data
 
     @property
     def lines(self):
+        """
+        List of lines to ber written to output.
+        """
         if self._lines is None:
             self._lines = self._prepare_output()
         return self._lines
@@ -32,16 +45,16 @@ class CaPrinter:
         out = []
         tmp = collections.defaultdict(dict)
 
-        for line in self.data:
+        for line in self._data:
             tmp[line['eventId']][line['userId']] = line['timestamp']
 
         for event_id, users in sorted(tmp.items()):
-            out.append(self.sep)
+            out.append(self._sep)
             out.append("Event ID: %s" % event_id)
             for user_id, timestamp in sorted(users.items(),
                                              key=lambda x: x[0]):
                 out.append("    %s: %s" % (user_id, timestamp))
-            out.append(self.sep)
+            out.append(self._sep)
         return out
 
     def write_terminal(self):

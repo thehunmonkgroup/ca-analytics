@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 from os.path import join as j
+from pprint import pprint
 
 import ruamel.yaml as yaml
 
@@ -20,7 +21,15 @@ log = logging.getLogger(__name__)
 
 
 def evaluate_arguments(args):
-    events = Setts.DB_MONGO.value.get_events()
+    """
+    eventId: 340, 342, 523
+
+    :param args:
+    :return:
+    """
+
+    events = Setts.DB_MONGO.value.get_events(event_ids=args.event)
+
     printer = CaPrinter(data=events)
     if args.output_destination:
         printer.write_file(f_path=args.output_destination)
@@ -29,6 +38,8 @@ def evaluate_arguments(args):
 
 
 def main():
+    # TODO: output: sort by user id or date users joined event?
+
     args, parser = configure_argparse(start_cmd=None)
 
     if args.sample:
