@@ -29,8 +29,7 @@ def evaluate_arguments(args):
     """
 
     db_data = Setts._DB_MONGO.value.get_data(event_ids=args.event,
-                                            user_ids=args.user)
-
+                                             user_ids=args.user)
     printer = CaPrinter(data=db_data)
     if args.output_destination:
         printer.write_file(f_path=args.output_destination)
@@ -58,7 +57,7 @@ def main():
     evaluate_arguments(args)
 
 
-version = {'y': 2016, 'm': 8, 'd': 18}
+version = {'y': 2016, 'm': 8, 'd': 20}
 __version__ = '{y}.{m}.{d}'.format(**version)
 
 if __name__ == '__main__':

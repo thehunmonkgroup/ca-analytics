@@ -209,7 +209,7 @@ def conf_logs(log_name, log_dir=None, console_level=logging.ERROR,
     dummy.propagate = False
 
     msg = 'Logs configured with: console_level: "%s"%s%s' % (
-    console_level, msg_file, msg_esb)
+        console_level, msg_file, msg_esb)
     if print_dest:
         print(msg)
     log.debug(msg)

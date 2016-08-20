@@ -35,7 +35,7 @@ class MongoData:
         if event_ids is not None:
             question["eventId"] = self._search_in(event_ids)
         if user_ids is not None:
-            question["eventId"] = self._search_in(user_ids)
+            question["userId"] = self._search_in(user_ids, cast=str)
 
         ret = self.db_mongo.analytics.find(question)
         return ret
@@ -49,6 +49,9 @@ class MongoData:
         """
         Return dict that will allow several fields to be searched against.
         DB is type (str, int, ..) sensitive.
+
+        with userId:
+        OverflowError: MongoDB can only handle up to 8-byte ints
         """
         ret = []
         for each in iterable:
