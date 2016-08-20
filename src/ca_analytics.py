@@ -35,10 +35,6 @@ def evaluate_arguments():
 def main():
     start_cmd = None
     args, parser = configure_argparse(rwd=rwd, start_cmd=start_cmd)
-    if args.sample:
-        print('# Program defaults. Comment unnecessary')
-        print(yaml.dump(Setts.cfg), end='')
-        sys.exit(0)
 
     # Load default cfg
     Setts.refresh(f_pth=j(rwd, Setts.CFG_PATH.value))

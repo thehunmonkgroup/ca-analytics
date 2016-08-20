@@ -66,6 +66,7 @@ class CaPrinter:
             print(line)
 
     def write_file(self, f_path):
+        f_path = norm_path(f_path, mkfile=False, mkdir=False)
         with open(f_path, 'w') as f:
             print('* Writing to file: "%s"' % f_path)
             f.write('\n'.join(self.lines))
@@ -233,7 +234,6 @@ def configure_argparse(rwd, start_cmd=None):
         mongo_database=None,
         mongodb_connection_string=None,
         output_destination=None,
-        sample=False,
         user=None
     )
     """
@@ -246,7 +246,7 @@ def configure_argparse(rwd, start_cmd=None):
                '[-u [USER_ID [USER_ID ...]]] '
                '[--date_from DATE] '
                '[--date_to DATE] '
-               '[CONFIGURATION] [--sample] [-h]')
+               '[CONFIGURATION] [-h]')
     )
 
     stats_opt = parser.add_argument_group('Analytics Options')
@@ -317,12 +317,6 @@ def configure_argparse(rwd, start_cmd=None):
                           default=Setts.CFG_PATH.default % rwd,
                           help=Setts.CFG_PATH.desc % rwd,
                           metavar='FILE',
-                          )
-
-    conf_opt.add_argument('--sample',
-                          action='store_true',
-                          help='Print sample YAML config file',
-                          # metavar='FILE',
                           )
 
     conf_opt.add_argument('-l', '--' + Setts.LOG_PATH.key,
@@ -438,6 +432,7 @@ class Setts:
         Get cfg dict from yaml file
         """
         try:
+            f_pth = norm_path(f_pth, mkdir=False, mkfile=False, logger=log)
             with open(f_pth) as f:
                 return yaml.load(f)
         except FileNotFoundError as e:
