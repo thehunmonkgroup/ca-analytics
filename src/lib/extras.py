@@ -31,6 +31,9 @@ class CaPrinter:
             {'eventId': 292, 'message': 'events', 'connectedUsers': 1, 'timestamp': '2016-03-19T08:59:37.600Z', 'userId': '108611793445678484173', 'level': 'info', '_id': ObjectId('57a3a39600c88030ca3fb3cc'), 'action'
         """
         self._data = data
+        if not data:
+            print('Output created with settings: "%s"' % Setts.cfg)
+            self._lines = ['No data to print.']
 
     @property
     def lines(self):
@@ -38,6 +41,7 @@ class CaPrinter:
         List of lines to ber written to output.
         """
         if self._lines is None:
+            print('Output created with settings: "%s"' % Setts.cfg)
             self._lines = self._prepare_output()
         return self._lines
 
@@ -52,7 +56,7 @@ class CaPrinter:
             out.append(self._sep)
             out.append("Event ID: %s" % event_id)
             for user_id, timestamp in sorted(users.items(),
-                                             key=lambda x: x[0]):
+                                             key=lambda x: x[1]):
                 out.append("    %s: %s" % (user_id, timestamp))
             out.append(self._sep)
         return out
@@ -215,7 +219,7 @@ def conf_logs(log_name, log_dir=None, console_level=logging.ERROR,
     log.debug(msg)
 
 
-def configure_argparse(start_cmd=None):
+def configure_argparse(rwd, start_cmd=None):
     """
     :return
     Namespace(
@@ -248,7 +252,6 @@ def configure_argparse(start_cmd=None):
     stats_opt = parser.add_argument_group('Analytics Options')
 
     stats_opt.add_argument('-e', '--' + Setts.EVENT.key,
-                           # default=Setts.EVENT.default,
                            help=Setts.EVENT.desc,
                            metavar='EVENT_ID',
                            type=int,
@@ -256,7 +259,6 @@ def configure_argparse(start_cmd=None):
                            )
 
     stats_opt.add_argument('-u', '--' + Setts.USER.key,
-                           # default=Setts.USER.default,
                            help=Setts.USER.desc,
                            metavar='USER_ID',
                            type=int,
@@ -264,7 +266,6 @@ def configure_argparse(start_cmd=None):
                            )
 
     stats_opt.add_argument('--' + Setts.DATE_FROM.key,
-                           # default=Setts.DATE_FROM.default,
                            help=Setts.DATE_FROM.desc,
                            metavar='DATE',
                            type=str,
@@ -281,28 +282,24 @@ def configure_argparse(start_cmd=None):
 
     conn_opt.add_argument('--' + Setts.COUCH_STRING.key,
                           type=str,
-                          # default=Setts.COUCH_STRING.default,
                           help=Setts.COUCH_STRING.desc,
                           metavar='URL',
                           )
 
     conn_opt.add_argument('--' + Setts.COUCH_DATABASE.key,
                           type=str,
-                          # default=Setts.COUCH_DATABASE.default,
                           help=Setts.COUCH_DATABASE.desc,
                           metavar='NAME',
                           )
 
     conn_opt.add_argument('--' + Setts.MONGO_STRING.key,
                           type=str,
-                          # default=Setts.MONGO_STRING.default,
                           help=Setts.MONGO_STRING.desc,
                           metavar='URI',
                           )
 
     conn_opt.add_argument('--' + Setts.MONGO_DATABASE.key,
                           type=str,
-                          # default=Setts.MONGO_DATABASE.default,
                           help=Setts.MONGO_DATABASE.desc,
                           metavar='NAME',
                           )
@@ -311,16 +308,14 @@ def configure_argparse(start_cmd=None):
 
     conf_opt.add_argument('-o', '--' + Setts.OUT_DEST.key,
                           type=str,
-                          # default=Setts.OUT_DEST.default,
                           help=Setts.OUT_DEST.desc,
                           metavar='FILE',
                           )
 
     conf_opt.add_argument('-c', '--' + Setts.CFG_PATH.key,
                           type=str,
-                          # dest='cfg',
-                          # default=Setts.CFG_PATH.default,
-                          help=Setts.CFG_PATH.desc,
+                          default=Setts.CFG_PATH.default % rwd,
+                          help=Setts.CFG_PATH.desc % rwd,
                           metavar='FILE',
                           )
 
@@ -332,7 +327,6 @@ def configure_argparse(start_cmd=None):
 
     conf_opt.add_argument('-l', '--' + Setts.LOG_PATH.key,
                           type=str,
-                          # default=Setts.LOG_PATH.default,
                           help=Setts.LOG_PATH.desc,
                           metavar='FILE',
                           )
@@ -342,9 +336,7 @@ def configure_argparse(start_cmd=None):
                           default=argparse.SUPPRESS,
                           help='Print this help text and exit',
                           )
-
     args = parser.parse_args(args=start_cmd)
-
     return args, parser
 
 
@@ -382,23 +374,19 @@ class Setts:
 
     EVENT = Option(
         'event',
-        default=[],
         desc='Events ids to report')
 
     USER = Option(
         'user',
-        default=[],
         desc='Users ids to report')
 
     DATE_FROM = Option(
         'date_from',
-        default='',
-        desc='Give starting date from which to report')
+        desc='Include logs from this date and later [eg. "2016-07-02"]')
 
     DATE_TO = Option(
         'date_to',
-        default='',
-        desc="The lower bound for the report's date")
+        desc='Exclude logs from this date and later [eg. "2016-07-03"]')
 
     # Connection settings
     COUCH_STRING = Option(
@@ -424,17 +412,15 @@ class Setts:
     # Script options
     OUT_DEST = Option(
         'output_destination',
-        default='',
         desc='File path to where the report should be saved [Default: screen]')
 
     CFG_PATH = Option(
         'cfg',
-        default='ca_analytics.cfg',
-        desc='Path to cfg file [Default: "$(pwd)/%(default)s"]')
+        default='%s/ca_analytics.cfg',
+        desc='Path to cfg file [Default: "%s/ca_analytics.cfg"]')
 
     LOG_PATH = Option(
         'log',
-        default='',
         desc='Path to log file')
 
     # Program stuff
@@ -463,8 +449,6 @@ class Setts:
         def condition_to_be_opt(x):
             return x[0].isalpha() and x.isupper()
 
-        # return {x: Setts.__dict__[x] for x in Setts.__dict__ if
-        #                                                 condition_to_be_opt(x)}
         return [Setts.__dict__[x] for x in Setts.__dict__ if
                 condition_to_be_opt(x)]
 

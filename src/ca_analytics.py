@@ -6,7 +6,6 @@ import logging
 import os
 import sys
 from os.path import join as j
-from pprint import pprint
 
 import ruamel.yaml as yaml
 
@@ -20,28 +19,22 @@ if rwd not in sys.path:
 log = logging.getLogger(__name__)
 
 
-def evaluate_arguments(args):
-    """
-    eventId: 340, 342, 523
-
-    :param args:
-    :return:
-    """
-
-    db_data = Setts._DB_MONGO.value.get_data(event_ids=args.event,
-                                             user_ids=args.user)
+def evaluate_arguments():
+    db_data = Setts._DB_MONGO.value.get_data(event_ids=Setts.EVENT.value,
+                                             user_ids=Setts.USER.value)
+    db_data = Setts._DB_MONGO.value.filter_date(data=db_data,
+                                                date_from=Setts.DATE_FROM.value,
+                                                date_to=Setts.DATE_TO.value)
     printer = CaPrinter(data=db_data)
-    if args.output_destination:
-        printer.write_file(f_path=args.output_destination)
+    if Setts.OUT_DEST.value:
+        printer.write_file(f_path=Setts.OUT_DEST.value)
     else:
         printer.write_terminal()
 
 
 def main():
-    # TODO: output: sort by user id or date users joined event?
-
-    args, parser = configure_argparse(start_cmd=None)
-
+    start_cmd = None
+    args, parser = configure_argparse(rwd=rwd, start_cmd=start_cmd)
     if args.sample:
         print('# Program defaults. Comment unnecessary')
         print(yaml.dump(Setts.cfg), end='')
@@ -54,7 +47,7 @@ def main():
     # Load user args
     Setts.refresh(cfg=args.__dict__)
     init_db()
-    evaluate_arguments(args)
+    evaluate_arguments()
 
 
 version = {'y': 2016, 'm': 8, 'd': 20}
