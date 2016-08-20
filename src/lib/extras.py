@@ -66,6 +66,7 @@ class CaPrinter:
             print(line)
 
     def write_file(self, f_path):
+        f_path = norm_path(f_path, mkfile=False, mkdir=False)
         with open(f_path, 'w') as f:
             print('* Writing to file: "%s"' % f_path)
             f.write('\n'.join(self.lines))
@@ -319,12 +320,6 @@ def configure_argparse(rwd, start_cmd=None):
                           metavar='FILE',
                           )
 
-    conf_opt.add_argument('--sample',
-                          action='store_true',
-                          help='Print sample YAML config file',
-                          # metavar='FILE',
-                          )
-
     conf_opt.add_argument('-l', '--' + Setts.LOG_PATH.key,
                           type=str,
                           help=Setts.LOG_PATH.desc,
@@ -438,6 +433,7 @@ class Setts:
         Get cfg dict from yaml file
         """
         try:
+            f_pth = norm_path(f_pth, mkdir=False, mkfile=False, logger=log)
             with open(f_pth) as f:
                 return yaml.load(f)
         except FileNotFoundError as e:
