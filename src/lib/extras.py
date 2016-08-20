@@ -222,14 +222,14 @@ def configure_argparse(start_cmd=None):
         cfg=None,
         couchdb_connection_string=None,
         couchdb_database=None,
-        end_date=None,
+        date_from=None,
+        date_to=None,
         event=None,
         log=None,
         mongo_database=None,
         mongodb_connection_string=None,
         output_destination=None,
         sample=False,
-        start_date=None,
         user=None
     )
     """
@@ -237,7 +237,12 @@ def configure_argparse(start_cmd=None):
     parser = argparse.ArgumentParser(
         description='Exports Circle Anywhere analytical information',
         add_help=False,
-        usage='%(prog)s [-e [EVENT_ID [EVENT_ID ...]]] [-u [USER_ID [USER_ID ...]]] [--start-date DATE] [--end_date DATE] [CONFIGURATION]'
+        usage=('%(prog)s '
+               '[-e [EVENT_ID [EVENT_ID ...]]] '
+               '[-u [USER_ID [USER_ID ...]]] '
+               '[--date_from DATE] '
+               '[--date_to DATE] '
+               '[CONFIGURATION] [--sample] [-h]')
     )
 
     stats_opt = parser.add_argument_group('Analytics Options')
@@ -258,16 +263,16 @@ def configure_argparse(start_cmd=None):
                            nargs='*',
                            )
 
-    stats_opt.add_argument('--' + Setts.START_DATE.key,
-                           # default=Setts.START_DATE.default,
-                           help=Setts.START_DATE.desc,
+    stats_opt.add_argument('--' + Setts.DATE_FROM.key,
+                           # default=Setts.DATE_FROM.default,
+                           help=Setts.DATE_FROM.desc,
                            metavar='DATE',
                            type=str,
                            )
 
-    stats_opt.add_argument('--' + Setts.END_DATE.key,
-                           # default=Setts.END_DATE.default,
-                           help=Setts.END_DATE.desc,
+    stats_opt.add_argument('--' + Setts.DATE_TO.key,
+                           # default=Setts.DATE_TO.default,
+                           help=Setts.DATE_TO.desc,
                            metavar='DATE',
                            type=str,
                            )
@@ -385,13 +390,13 @@ class Setts:
         default=[],
         desc='Users ids to report')
 
-    START_DATE = Option(
-        'start_date',
+    DATE_FROM = Option(
+        'date_from',
         default='',
         desc='Give starting date from which to report')
 
-    END_DATE = Option(
-        'end_date',
+    DATE_TO = Option(
+        'date_to',
         default='',
         desc="The lower bound for the report's date")
 
@@ -433,11 +438,11 @@ class Setts:
         desc='Path to log file')
 
     # Program stuff
-    DB_MONGO = Option(
+    _DB_MONGO = Option(
         'db_mongo',
         desc='Reference to our mongoDB')
 
-    DB_COUCH = Option(
+    _DB_COUCH = Option(
         'db_couch',
         desc='Reference to our couchDB')
 

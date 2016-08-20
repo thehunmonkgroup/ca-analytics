@@ -18,10 +18,15 @@ class MongoData:
         self._client = MongoClient(connection_string)
         self.db_mongo = self._client[database_name]
 
-    def get_events(self, event_ids=None):
-        """
-        Get data about specific events.
+    def filter_date(self, date_from, date_to):
+        pass
 
+    def get_data(self, event_ids=None, user_ids=None):
+        """
+        Get data about specific events or users.
+
+        :param user_ids:
+        :param user_ids: list of userIds
         :type event_ids: list of eventIds
         :return:
         """
@@ -29,6 +34,8 @@ class MongoData:
 
         if event_ids is not None:
             question["eventId"] = self._search_in(event_ids)
+        if user_ids is not None:
+            question["eventId"] = self._search_in(user_ids)
 
         ret = self.db_mongo.analytics.find(question)
         return ret
@@ -54,7 +61,7 @@ class MongoData:
 
 
 def init_db():
-    Setts.DB_MONGO.value = MongoData(
+    Setts._DB_MONGO.value = MongoData(
         connection_string=Setts.MONGO_STRING.value,
         database_name=Setts.MONGO_DATABASE.value
     )

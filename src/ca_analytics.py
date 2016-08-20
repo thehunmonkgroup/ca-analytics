@@ -28,9 +28,10 @@ def evaluate_arguments(args):
     :return:
     """
 
-    events = Setts.DB_MONGO.value.get_events(event_ids=args.event)
+    db_data = Setts._DB_MONGO.value.get_data(event_ids=args.event,
+                                            user_ids=args.user)
 
-    printer = CaPrinter(data=events)
+    printer = CaPrinter(data=db_data)
     if args.output_destination:
         printer.write_file(f_path=args.output_destination)
     else:
@@ -44,7 +45,7 @@ def main():
 
     if args.sample:
         print('# Program defaults. Comment unnecessary')
-        print(yaml.dump(Setts.cfg))
+        print(yaml.dump(Setts.cfg), end='')
         sys.exit(0)
 
     # Load default cfg
