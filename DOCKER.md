@@ -2,19 +2,24 @@
 
 ## Prerequisites
 
-### Docker instalation
+### Docker installation
 Install docker according to your platform: https://docs.docker.com/engine/getstarted/step_one/
 
-## Creating testers image
+## Creating and running production image
 
 First execution can take a few minutes:
 ```
-$ docker build -t img_name -f conf/docker/server/Dockerfile .
+$ docker build -t circle_anywhere/ca_host -f conf/docker/ca_host/Dockerfile .
 ```
 
-as a result you should see something like this:
+Start the container with `--net="host"` for now (one need to have DBs up and running on local ports):
 ```
-$ Successfully built 5f2537fe3e78
+$ docker run -it --rm --net="host" --name ca_analytics circle_anywhere/ca_host
+
+# -i, --interactive  Keep STDIN open even if not attached
+# -t, --tty          Allocate a pseudo-TTY
+# --rm               Automatically remove the container when it exits
+# --net              Thanks to that container will see localhost open ports
 ```
 
 
@@ -22,9 +27,8 @@ $ Successfully built 5f2537fe3e78
 Each time you execute this command a new container will be created. After stop container will be removed.
 Database content is saved in container so all content will be removed too.
 ```
-$ docker run -it --rm --name analyticsapp img_name
+$ docker run -it --rm --name ca_analytics circle_anywhere/ca_host
 ```
-` # TODO: img_name`
 
 
 ## Starting server from stopped container
@@ -33,8 +37,8 @@ $ docker run -it --rm --name analyticsapp img_name
 ```
 $ docker ps -a
 $
-$CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS                     PORTS               NAMES
-$6b2464ba8b29        img_name            "python3 manage.py ru"   8 seconds ago       Exited (0) 3 seconds ago                       nauseous_morse
+$CONTAINER ID        IMAGE                   COMMAND                  CREATED             STATUS                     PORTS               NAMES
+$6b2464ba8b29        circle_anywhere/ca_host  "python3 manage.py ru"   8 seconds ago       Exited (0) 3 seconds ago                       nauseous_morse
 ```
 
 2. start container:
@@ -45,7 +49,7 @@ $ docker start -ia 6b2464ba8b29
 ## Starting bash
 Starting bash:
 ```
-$ docker run -it --rm --name analyticsapp img_name bash
+$ docker run -it --rm --name analyticsapp circle_anywhere/ca_host bash
 ```
 
 
