@@ -7,8 +7,6 @@ import os
 import sys
 from os.path import join as j
 
-import ruamel.yaml as yaml
-
 from lib.db_engine import init_db
 from lib.extras import configure_argparse, Setts, CaPrinter
 
@@ -46,7 +44,7 @@ def main():
     evaluate_arguments()
 
 
-version = {'y': 2016, 'm': 8, 'd': 20}
+version = {'y': 2016, 'm': 11, 'd': 6}
 __version__ = '{y}.{m}.{d}'.format(**version)
 
 if __name__ == '__main__':

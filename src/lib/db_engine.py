@@ -63,8 +63,8 @@ class MongoData:
                     if date_from < log_date < date_to:
                         ret_f.append(row)
                 except KeyError as e:
-                    log.error('Couldn\'t determine logs date "". '
-                              'err:\n %s', row, e)
+                    log.error("Couldn\'t determine logs date [%s] Error [%s]",
+                              row, e)
             return ret_f
 
         def handle_from(date_from):
@@ -76,8 +76,8 @@ class MongoData:
                     if date_from < log_date:
                         ret_f.append(row)
                 except KeyError as e:
-                    log.error('Couldn\'t determine logs date "". '
-                              'err:\n %s', row, e)
+                    log.error("Couldn\'t determine logs date [%s] Error [%s]",
+                              row, e)
             return ret_f
 
         def handle_to(date_to):
@@ -89,8 +89,8 @@ class MongoData:
                     if log_date < date_to:
                         ret_f.append(row)
                 except KeyError as e:
-                    log.error('Couldn\'t determine logs date "". '
-                              'err:\n %s', row, e)
+                    log.error("Couldn\'t determine logs date [%s] Error [%s]",
+                              row, e)
             return ret_f
 
         ret = data

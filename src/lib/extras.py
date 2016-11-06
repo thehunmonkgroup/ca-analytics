@@ -54,10 +54,10 @@ class CaPrinter:
 
         for event_id, users in sorted(tmp.items()):
             out.append(self._sep)
-            out.append("Event ID: %s" % event_id)
+            out.append('Event ID: %s' % event_id)
             for user_id, timestamp in sorted(users.items(),
                                              key=lambda x: x[1]):
-                out.append("    %s: %s" % (user_id, timestamp))
+                out.append('    %s: %s' % (user_id, timestamp))
             out.append(self._sep)
         return out
 
@@ -349,12 +349,12 @@ class Setts:
             self.value = value
 
         def __repr__(self):
-            return 'Option(key=%s, ' \
-                   'value=%s, ' \
-                   'default=%s, ' \
-                   'desc="%s", ' \
-                   'callback=%s)' % (self.key, self.value, self.default,
-                                     self.desc, self.callback)
+            return ('Option(key=%s, '
+                    'value=%s, '
+                    'default=%s, '
+                    'desc="%s", '
+                    'callback=%s)' % (self.key, self.value, self.default,
+                                      self.desc, self.callback))
 
         def __str__(self):
             return '"%s": "%s"' % (self.key, self.value)
