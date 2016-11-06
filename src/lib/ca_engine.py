@@ -5,6 +5,9 @@ import collections
 import logging
 
 import dateutil.parser
+import dateutil.relativedelta
+
+from lib.extras import Setts
 
 log = logging.getLogger(__name__)
 
@@ -93,6 +96,13 @@ class CaEvent:
     _event_id = None
     _user_list = None
 
+    # From Couch db
+    description = None
+    calendar_id = None
+    _start_time = None
+    _end_time = None
+    duration = None
+
     _couch_raw_data = None
 
     @property
@@ -110,6 +120,35 @@ class CaEvent:
                       self._event_id, value)
 
     @property
+    def start_time(self):
+        return self._start_time
+
+    @start_time.setter
+    def start_time(self, value):
+        """ Sets EventId for this class. """
+        value = dateutil.parser.parse(value)
+        if self._start_time is None:
+            self._start_time = value
+        elif self._start_time != value:
+            log.error('Tried to change _start_time of the class! [%s]->[%s]. '
+                      'This should never happen. Statistics may be corrupted.',
+                      self._start_time, value)
+
+    @property
+    def end_time(self):
+        if self._end_time is not None:
+            return self._end_time
+
+        try:
+            dt = dateutil.relativedelta.relativedelta(minutes=self.duration)
+        except TypeError as e:
+            log.debug(e)
+            dt = dateutil.relativedelta.relativedelta(minutes=0)
+
+        self._end_time = self._start_time + dt
+        return self._end_time
+
+    @property
     def user_list(self):
         return self._user_list
 
@@ -125,8 +164,21 @@ class CaEvent:
         self.user_list_append(ca_user)
 
     def fill_with_couch_details(self):
-        # TODO: Get CouchDB details about event and users
-        pass
+        def extend_event_data():
+            for row in self._couch_raw_data:
+                if row.id.startswith('event/'):
+                    self.description = row.value['description']
+                    self.calendar_id = row.value['calendarId']
+                    self.start_time = row.value['dateAndTime']
+                    self.duration = row.value['duration']
+
+        couch_get_data = Setts._DB_COUCH.value.get_data
+        self._couch_raw_data = couch_get_data(event_ids=self.event_id)
+        extend_event_data()
+
+        # TODO: Get CouchDB details about users
 
     def __str__(self):
-        return 'eventId [%s] user_list %s' % (self.event_id, self.user_list)
+        txt = 'eventId [%s] users_count [%s] time [%s]-[%s] description [%s]'
+        return txt % (self.event_id, len(self.user_list),
+                      self.start_time, self.end_time, self.description)

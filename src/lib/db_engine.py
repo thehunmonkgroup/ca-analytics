@@ -3,6 +3,7 @@
 #  Proxy for getting relevant info from databases
 import logging
 
+import couchdb
 import dateutil.parser
 from pymongo import MongoClient
 
@@ -147,8 +148,42 @@ class MongoData:
         return {'$in': ret}
 
 
+class CouchData:
+    query_event = '''
+        function(doc){
+            var patt = new RegExp('^event/[0-9]{5}$');
+            if(patt.test(doc._id) && doc.id == %s){
+                emit(doc.id, doc);
+            }
+        }
+        '''
+
+    def __init__(self, connection_string, database_name):
+        self._client = couchdb.Server(connection_string)
+        self.db_couch = self._client[database_name]
+
+    def get_data(self, event_ids=None, user_ids=None):
+        """
+        Get data about specific events or users.
+
+        :param user_ids:
+        :param user_ids: list of userIds
+        :type event_ids: list of eventIds
+        :return:
+        """
+        map_fun = self.query_event % event_ids
+        results = self.db_couch.query(map_fun)
+        # print(results.rows)
+
+        return results.rows
+
+
 def init_db():
     Setts._DB_MONGO.value = MongoData(
         connection_string=Setts.MONGO_STRING.value,
         database_name=Setts.MONGO_DATABASE.value
+    )
+    Setts._DB_COUCH.value = CouchData(
+        connection_string=Setts.COUCH_STRING.value,
+        database_name=Setts.COUCH_DATABASE.value
     )
