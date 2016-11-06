@@ -7,8 +7,9 @@ import os
 import sys
 from os.path import join as j
 
+from lib.ca_engine import get_ca_events
 from lib.db_engine import init_db
-from lib.extras import configure_argparse, Setts, CaPrinter
+from lib.extras import configure_argparse, Setts
 
 rwd = os.path.dirname(os.path.abspath(__file__))
 if rwd not in sys.path:
@@ -23,15 +24,21 @@ def evaluate_arguments():
     db_data = Setts._DB_MONGO.value.filter_date(data=db_data,
                                                 date_from=Setts.DATE_FROM.value,
                                                 date_to=Setts.DATE_TO.value)
-    printer = CaPrinter(data=db_data)
-    if Setts.OUT_DEST.value:
-        printer.write_file(f_path=Setts.OUT_DEST.value)
-    else:
-        printer.write_terminal()
+
+    ca_event_list = get_ca_events(db_data=db_data)
+
+    for line in ca_event_list:
+        print(line)
+
+        # printer = CaPrinter(data=db_data)
+        # if Setts.OUT_DEST.value:
+        #     printer.write_file(f_path=Setts.OUT_DEST.value)
+        # else:
+        #     printer.write_terminal()
 
 
 def main():
-    start_cmd = None
+    start_cmd = ['-e', '389', '523']
     args, parser = configure_argparse(rwd=rwd, start_cmd=start_cmd)
 
     # Load default cfg
