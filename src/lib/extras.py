@@ -37,9 +37,7 @@ class CaPrinter:
 
     @property
     def lines(self):
-        """
-        List of lines to ber written to output.
-        """
+        """ List of lines to be written to output. """
         if self._lines is None:
             print('Output created with settings: "%s"' % Setts.cfg)
             self._lines = self._prepare_output()
