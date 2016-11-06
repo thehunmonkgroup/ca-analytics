@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 from os.path import join as j
+from pprint import pprint
 
 from lib.ca_engine import get_ca_events
 from lib.db_engine import init_db
@@ -29,6 +30,7 @@ def evaluate_arguments():
 
     for line in ca_event_list:
         print(line)
+        pprint(line.user_list)
 
         # printer = CaPrinter(data=db_data)
         # if Setts.OUT_DEST.value:
