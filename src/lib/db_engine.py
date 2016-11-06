@@ -119,8 +119,9 @@ class MongoData:
             question["eventId"] = self._search_in(event_ids)
         if user_ids is not None:
             question["userId"] = self._search_in(user_ids, cast=str)
+        # Else whole db is downloaded for 'action': 'join'
 
-        ret = self.db_mongo.analytics.find(question)
+        ret = list(self.db_mongo.analytics.find(question))
         return ret
 
     @property
