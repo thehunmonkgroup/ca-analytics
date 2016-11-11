@@ -41,7 +41,7 @@ def evaluate_arguments():
     #     printer.write_terminal()
 
 
-def main():
+def main(start_cmd=None):
     start_cmd = ['-e', '389', '523',
                  '-u', '116788992537476058951', '116964073935054089646']
     start_cmd = ['-e', '389', '523',
@@ -64,6 +64,9 @@ __version__ = '{y}.{m}.{d}'.format(**version)
 
 if __name__ == '__main__':
     try:
+        # TODO: Add logging
+        # TODO: docker CoachDB & MongoDB
+        # TODO: Some test
         main()
     except Exception as e:
         log.exception(e)

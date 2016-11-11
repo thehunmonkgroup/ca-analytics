@@ -7,7 +7,7 @@ import couchdb
 import dateutil.parser
 from pymongo import MongoClient
 
-from lib.extras import Setts, is_string, is_iterable
+from lib.extras import Setts, is_string, is_iterable, get_couchdb_id
 
 log = logging.getLogger(__name__)
 
@@ -229,7 +229,7 @@ class CouchData:
             for evnt in sorted(set(map(str, evnt_ids))):
                 if none_or_empty(val=evnt):
                     continue
-                ret.append(evnt_templ % evnt.rjust(5, '0'))
+                ret.append(evnt_templ % get_couchdb_id(event_id=evnt))
 
             for usr in sorted(set(map(str, usr_ids))):
                 if none_or_empty(val=usr):

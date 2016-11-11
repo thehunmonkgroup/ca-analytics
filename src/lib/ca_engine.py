@@ -7,7 +7,6 @@ from pprint import pprint
 
 import dateutil.parser
 import dateutil.relativedelta
-import sys
 
 from lib.extras import Setts, COUCH_DB_MISSING_DATA
 
@@ -37,6 +36,7 @@ def get_ca_events(db_data):
 class CaUser:
     _user_id = None
     _timestamp = None
+    _timestamp_str = None
 
     _mongo_raw_data = None
     _couch_raw_data = None
@@ -69,6 +69,7 @@ class CaUser:
     @user_id.setter
     def user_id(self, value):
         """ Sets EventId for this class. """
+        value = int(value)
         if self._user_id is None:
             self._user_id = value
         elif self._user_id != value:
@@ -82,6 +83,7 @@ class CaUser:
     @timestamp.setter
     def timestamp(self, value):
         """ '2016-07-02T20:35:40.896Z' """
+        self._timestamp_str = str(value)
         value = dateutil.parser.parse(value)
 
         if self._timestamp is None:
@@ -90,6 +92,25 @@ class CaUser:
             log.error(self._error_msg_change,
                       'timestamp', self.user_id, self._timestamp, value)
 
+    def set_missing(self):
+        log.debug('Usr [%s] - setting missing', self.user_id)
+
+    def __hash__(self):
+        return (hash(self.user_id) ^
+                hash(self._timestamp_str))
+
+    def __eq__(self, other):
+        # TODO: Test!
+        if other.user_id != self.user_id:
+            return other.user_id < self.user_id
+        elif other.timestamp == self.timestamp:  # All equal!
+            return other.timestamp == self.timestamp
+        else:  # Same id, compare based on timestampe
+            return other.timestamp < self.timestamp
+
+    def __gt__(self, other):
+        return other.user_id < self.user_id
+
     def __str__(self):
         return 'userId [%s]@[%s]' % (self.user_id, self.timestamp)
 
@@ -97,9 +118,45 @@ class CaUser:
         return 'userId [%s]@[%s]' % (self.user_id, self.timestamp)
 
 
+class EventUsers:
+    _users_list = None
+
+    @property
+    def unique(self):
+        """
+        Return deduplicated users with earliest time they joined an event and
+         sorted id ascending.
+
+        :return:
+        """
+        # TODO: earliest time they joined an event
+        if self._users_list is None:
+            log.warning('Accessing uninitialized user list')
+            return []
+        else:
+            return sorted(set(self._users_list))
+
+    @property
+    def unique_ids(self):
+        ids = (x.user_id for x in self.unique)
+        return sorted(set(ids))
+
+    def get_all_with_earliest_join_time(self):
+        pass
+
+    def add(self, log_entry):
+        ca_user = CaUser(log_entry=log_entry)
+
+        if self._users_list is None:
+            self._users_list = [ca_user]
+        else:
+            self._users_list.append(ca_user)
+
+
+
 class CaEvent:
     _event_id = None
-    _user_list = None
+    _event_users = None
 
     # From Couch db
     description = None
@@ -115,6 +172,9 @@ class CaEvent:
     _error_msg_change = ('Tried to change [%s] of the event [%s]! [%s]->[%s]. '
                          'This should never happen. Statistics may be corrupted.')
 
+    def __init__(self):
+        self._event_users = EventUsers()
+
     @property
     def event_id(self):
         return self._event_id
@@ -122,7 +182,7 @@ class CaEvent:
     @event_id.setter
     def event_id(self, value):
         """ Sets EventId for this class. """
-        value = self.get_couchdb_id(event_id=value)
+        value = int(value)
         if self._event_id is None:
             self._event_id = value
         elif self._event_id != value:
@@ -164,23 +224,20 @@ class CaEvent:
         return self._end_time
 
     @property
-    def users_list(self):
-        return self._user_list.copy()
+    def event_users(self):
+        return self._event_users.unique
 
-    @property
-    def users_id_list(self):
-        return [usr.user_id for usr in self._user_list]
+    # @property
+    # def event_users_id(self):
+    #     return self._event_users.unique_ids
 
-    def user_list_append(self, value):
-        if self._user_list is None:
-            self._user_list = [value]
-        else:
-            self._user_list.append(value)
+    # @property
+    # def users_id_list(self):
+    #     return [usr.user_id for usr in self._event_users]
 
     def append(self, log_entry):
         self.event_id = log_entry['eventId']
-        ca_user = CaUser(log_entry=log_entry)
-        self.user_list_append(ca_user)
+        self._event_users.add(log_entry=log_entry)
 
     def fill_with_couch_details(self):
         """
@@ -188,6 +245,7 @@ class CaEvent:
          is filled.
         :return:
         """
+
         def update_event_data(row):
             event_data = {'description': row.value['description'],
                           'calendar_id': row.value['calendarId'],
@@ -203,9 +261,10 @@ class CaEvent:
             self.duration = event_data['duration']
 
         def update_child_user_data(child_user, row):
+            # log.error('Updating user [%s] with [%s]', child_user, row)
             pass
 
-        def update_all_data():
+        def update_data():
             """
             Update this event details and all child users of this event with
              CoachDB data.
@@ -215,10 +274,11 @@ class CaEvent:
 
             :return:
             """
+
             def this_event():
                 try:
                     update_event_data(
-                        row=self._couch_data.get(int(self.event_id))
+                        row=self._couch_data.get(self.event_id)
                     )
                 except AttributeError:
                     log.error('No event for id [%s] found in CouchDB. '
@@ -229,33 +289,42 @@ class CaEvent:
 
             this_event()
 
-            for usr_id in self.users_list:
-                pass
+            for usr in self.event_users:
+                try:
+                    row = self._couch_data[usr.user_id]
+                    update_child_user_data(child_user=usr, row=row)
+                except KeyError:
+                    log.error("User [%s] wasn't found in CouchDB. "
+                              "Setting user missing. %s", usr.user_id, self._couch_data)
+                    usr.set_missing()
+
 
         self._update_with_couch_db_data()
-        update_all_data()
+        update_data()
         # sys.exit()
         # for row in self._couch_raw_data:
-            # print(row.value.get('_id', 'error!'))
-            # if row.id.startswith('event/'):
-            #     update_event_data(row_=row)
-            # else:
-            #     pass
-                # print('aaa')
-                # print(row.value)
+        # print(row.value.get('_id', 'error!'))
+        # if row.id.startswith('event/'):
+        #     update_event_data(row_=row)
+        # else:
+        #     pass
+        # print('aaa')
+        # print(row.value)
 
         # TODO: Get CouchDB details about users
+
     def _update_with_couch_db_data(self):
         """
         Get CouchDB data and set it in model.
 
         :return:
         """
+        users_id_list = self._event_users.unique_ids
         couch_data = self.get_couch_data(event_ids=self.event_id,
-                                         user_ids=self.users_id_list)
+                                         user_ids=users_id_list)
         self._couch_raw_data = tuple(couch_data)
         # For ease & convenience
-        self._couch_data = {row.value.get('id', 'error!'): row
+        self._couch_data = {int(row.value.get('id', '-1')): row
                             for row in self._couch_raw_data}
 
     def set_missing(self):
@@ -269,11 +338,7 @@ class CaEvent:
         return Setts._DB_COUCH.value.get_data(event_ids=event_ids,
                                               user_ids=user_ids)
 
-    @staticmethod
-    def get_couchdb_id(event_id):
-        return str(event_id).rjust(5, '0')
-
     def __str__(self):
         txt = 'eventId [%s] users_count [%s] time [%s]-[%s] description [%s]'
-        return txt % (self.event_id, len(self.users_list),
+        return txt % (self.event_id, len(self.event_users),
                       self.start_time, self.end_time, self.description)

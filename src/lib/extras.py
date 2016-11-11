@@ -19,6 +19,10 @@ is_string = lambda val: isinstance(val, str)
 is_iterable = lambda val: isinstance(val, collections.Iterable)
 
 
+def get_couchdb_id(event_id):
+    return str(event_id).rjust(5, '0')
+
+
 class CaPrinter:
     _data = None
     _lines = None
