@@ -3,11 +3,13 @@
 #  Engine for ca analytics
 import collections
 import logging
+from pprint import pprint
 
 import dateutil.parser
 import dateutil.relativedelta
+import sys
 
-from lib.extras import Setts
+from lib.extras import Setts, COUCH_DB_MISSING_DATA
 
 log = logging.getLogger(__name__)
 
@@ -21,6 +23,7 @@ def get_ca_events(db_data):
     events = collections.defaultdict(CaEvent)
 
     for row in db_data:
+        # print('processing:', row)
         eventId = row['eventId']
         events[eventId].append(log_entry=row)
 
@@ -37,6 +40,10 @@ class CaUser:
 
     _mongo_raw_data = None
     _couch_raw_data = None
+
+    # TODO: Proper error handling
+    _error_msg_change = ('Tried to change [%s] of the user [%s]! [%s]->[%s]. '
+                         'This should never happen. Statistics may be corrupted.')
 
     def __init__(self, log_entry):
         """
@@ -65,9 +72,8 @@ class CaUser:
         if self._user_id is None:
             self._user_id = value
         elif self._user_id != value:
-            log.error('Tried to change user_id of the class! [%s]->[%s]. '
-                      'This should never happen. Statistics may be corrupted.',
-                      self._user_id, value)
+            log.error(self._error_msg_change,
+                      'user_id', self.user_id, self._user_id, value)
 
     @property
     def timestamp(self):
@@ -81,9 +87,8 @@ class CaUser:
         if self._timestamp is None:
             self._timestamp = value
         elif self._timestamp != value:
-            log.error('Tried to change timestamp of the class! [%s]->[%s]. '
-                      'This should never happen. Statistics may be corrupted.',
-                      self._timestamp, value)
+            log.error(self._error_msg_change,
+                      'timestamp', self.user_id, self._timestamp, value)
 
     def __str__(self):
         return 'userId [%s]@[%s]' % (self.user_id, self.timestamp)
@@ -104,6 +109,11 @@ class CaEvent:
     duration = None
 
     _couch_raw_data = None
+    _couch_data = None  # Converted to dict
+
+    # TODO: Proper error handling
+    _error_msg_change = ('Tried to change [%s] of the event [%s]! [%s]->[%s]. '
+                         'This should never happen. Statistics may be corrupted.')
 
     @property
     def event_id(self):
@@ -112,12 +122,12 @@ class CaEvent:
     @event_id.setter
     def event_id(self, value):
         """ Sets EventId for this class. """
+        value = self.get_couchdb_id(event_id=value)
         if self._event_id is None:
             self._event_id = value
         elif self._event_id != value:
-            log.error('Tried to change event_id of the class! [%s]->[%s]. '
-                      'This should never happen. Statistics may be corrupted.',
-                      self._event_id, value)
+            log.error(self._error_msg_change,
+                      'event_id', self.event_id, self._event_id, value)
 
     @property
     def start_time(self):
@@ -130,9 +140,8 @@ class CaEvent:
         if self._start_time is None:
             self._start_time = value
         elif self._start_time != value:
-            log.error('Tried to change _start_time of the class! [%s]->[%s]. '
-                      'This should never happen. Statistics may be corrupted.',
-                      self._start_time, value)
+            log.error(self._error_msg_change,
+                      'start_time', self.event_id, self._start_time, value)
 
     @property
     def end_time(self):
@@ -142,15 +151,25 @@ class CaEvent:
         try:
             dt = dateutil.relativedelta.relativedelta(minutes=self.duration)
         except TypeError as e:
-            log.debug(e)
+            log.error('Error converting duration [%s]. [%s]', self.duration, e)
             dt = dateutil.relativedelta.relativedelta(minutes=0)
 
-        self._end_time = self._start_time + dt
+        try:
+            self._end_time = self._start_time + dt
+        except TypeError as e:
+            # Probably missing entry of this event in CouchDB
+            log.error('Error estimating end time of the event [%s]. '
+                      'Start time: %s. Error: %s',
+                      self.event_id, self.start_time, e)
         return self._end_time
 
     @property
-    def user_list(self):
-        return self._user_list
+    def users_list(self):
+        return self._user_list.copy()
+
+    @property
+    def users_id_list(self):
+        return [usr.user_id for usr in self._user_list]
 
     def user_list_append(self, value):
         if self._user_list is None:
@@ -164,21 +183,97 @@ class CaEvent:
         self.user_list_append(ca_user)
 
     def fill_with_couch_details(self):
-        def extend_event_data():
-            for row in self._couch_raw_data:
-                if row.id.startswith('event/'):
-                    self.description = row.value['description']
-                    self.calendar_id = row.value['calendarId']
-                    self.start_time = row.value['dateAndTime']
-                    self.duration = row.value['duration']
+        """
+        This method should be run when all the data of user_id under this event
+         is filled.
+        :return:
+        """
+        def update_event_data(row):
+            event_data = {'description': row.value['description'],
+                          'calendar_id': row.value['calendarId'],
+                          'start_time': row.value['dateAndTime'],
+                          'duration': row.value['duration']}
 
-        couch_get_data = Setts._DB_COUCH.value.get_data
-        self._couch_raw_data = couch_get_data(event_ids=self.event_id)
-        extend_event_data()
+            log.debug('Updating event [%s] with data: %s',
+                      self.event_id, event_data)
+
+            self.description = event_data['description']
+            self.calendar_id = event_data['calendar_id']
+            self.start_time = event_data['start_time']
+            self.duration = event_data['duration']
+
+        def update_child_user_data(child_user, row):
+            pass
+
+        def update_all_data():
+            """
+            Update this event details and all child users of this event with
+             CoachDB data.
+
+            _couch_data: {row.id: row}
+            row.id, just number
+
+            :return:
+            """
+            def this_event():
+                try:
+                    update_event_data(
+                        row=self._couch_data.get(int(self.event_id))
+                    )
+                except AttributeError:
+                    log.error('No event for id [%s] found in CouchDB. '
+                              'Setting fields as missing for this event. '
+                              'In CouchDB found: %s',
+                              self.event_id, self._couch_data.keys())
+                    self.set_missing()
+
+            this_event()
+
+            for usr_id in self.users_list:
+                pass
+
+        self._update_with_couch_db_data()
+        update_all_data()
+        # sys.exit()
+        # for row in self._couch_raw_data:
+            # print(row.value.get('_id', 'error!'))
+            # if row.id.startswith('event/'):
+            #     update_event_data(row_=row)
+            # else:
+            #     pass
+                # print('aaa')
+                # print(row.value)
 
         # TODO: Get CouchDB details about users
+    def _update_with_couch_db_data(self):
+        """
+        Get CouchDB data and set it in model.
+
+        :return:
+        """
+        couch_data = self.get_couch_data(event_ids=self.event_id,
+                                         user_ids=self.users_id_list)
+        self._couch_raw_data = tuple(couch_data)
+        # For ease & convenience
+        self._couch_data = {row.value.get('id', 'error!'): row
+                            for row in self._couch_raw_data}
+
+    def set_missing(self):
+        self.description = COUCH_DB_MISSING_DATA
+        self.calendar_id = COUCH_DB_MISSING_DATA
+        self._start_time = COUCH_DB_MISSING_DATA
+        self.duration = COUCH_DB_MISSING_DATA
+
+    @staticmethod
+    def get_couch_data(event_ids=None, user_ids=None):
+        return Setts._DB_COUCH.value.get_data(event_ids=event_ids,
+                                              user_ids=user_ids)
+
+    @staticmethod
+    def get_couchdb_id(event_id):
+        return str(event_id).rjust(5, '0')
 
     def __str__(self):
         txt = 'eventId [%s] users_count [%s] time [%s]-[%s] description [%s]'
-        return txt % (self.event_id, len(self.user_list),
+        return txt % (self.event_id, len(self.users_list),
                       self.start_time, self.end_time, self.description)

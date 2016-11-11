@@ -6,7 +6,6 @@ import logging
 import os
 import sys
 from os.path import join as j
-from pprint import pprint
 
 from lib.ca_engine import get_ca_events
 from lib.db_engine import init_db
@@ -20,6 +19,8 @@ log = logging.getLogger(__name__)
 
 
 def evaluate_arguments():
+    print('evnts:', Setts.EVENT.value)
+    print('Setts.USER.value:', Setts.USER.value)
     db_data = Setts._DB_MONGO.value.get_data(event_ids=Setts.EVENT.value,
                                              user_ids=Setts.USER.value)
     db_data = Setts._DB_MONGO.value.filter_date(data=db_data,
@@ -27,20 +28,25 @@ def evaluate_arguments():
                                                 date_to=Setts.DATE_TO.value)
 
     ca_event_list = get_ca_events(db_data=db_data)
+    print('** aaa')
+    # for line in ca_event_list:
+    #     print(line)
+    # pprint(line.user_list)
 
-    for line in ca_event_list:
-        print(line)
-        pprint(line.user_list)
-
-        # printer = CaPrinter(data=db_data)
-        # if Setts.OUT_DEST.value:
-        #     printer.write_file(f_path=Setts.OUT_DEST.value)
-        # else:
-        #     printer.write_terminal()
+    print('** bbb')
+    # printer = CaPrinter(data=db_data)
+    # if Setts.OUT_DEST.value:
+    #     printer.write_file(f_path=Setts.OUT_DEST.value)
+    # else:
+    #     printer.write_terminal()
 
 
 def main():
-    start_cmd = ['-e', '389', '523']
+    start_cmd = ['-e', '389', '523',
+                 '-u', '116788992537476058951', '116964073935054089646']
+    start_cmd = ['-e', '389', '523',
+                 '-u', '116788992537476058951', '116964073935054089646']
+    start_cmd = ['-u', '116788992537476058951', '116964073935054089646']
     args, parser = configure_argparse(rwd=rwd, start_cmd=start_cmd)
 
     # Load default cfg
@@ -53,7 +59,7 @@ def main():
     evaluate_arguments()
 
 
-version = {'y': 2016, 'm': 11, 'd': 6}
+version = {'y': 2016, 'm': 11, 'd': 11}
 __version__ = '{y}.{m}.{d}'.format(**version)
 
 if __name__ == '__main__':
