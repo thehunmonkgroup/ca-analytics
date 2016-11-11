@@ -24,23 +24,19 @@ def get_couchdb_id(event_id):
 
 
 class CaPrinter:
-    _data = None
+    _ca_events_list = None
     _lines = None
     _sep = '-' * 25
 
-    def __init__(self, data):
+    def __init__(self, ca_events_list):
         """
         Here is raw data. During printing/writing to file it's converted in
         `_prepare_output`.:
 
-        :param data: json list/db_cursor
-            {'eventId': 286, 'message': 'events', 'connectedUsers': 0, 'timestamp': '2016-03-19T03:27:14.150Z', 'userId': '112349864121259291250', 'level': 'info', '_id': ObjectId('57a3a39600c88030ca3faf88'), 'action': 'join'}
-            {'eventId': 286, 'message': 'events', 'connectedUsers': 1, 'timestamp': '2016-03-19T03:27:27.177Z', 'userId': '116488113102013485647', 'level': 'info', '_id': ObjectId('57a3a39600c88030ca3faf98'), 'action': 'join'}
-            {'eventId': 266, 'message': 'events', 'connectedUsers': 0, 'timestamp': '2016-03-19T04:38:34.221Z', 'userId': '114498861474704307604', 'level': 'info', '_id': ObjectId('57a3a39600c88030ca3fb10e'), 'action': 'join'}
-            {'eventId': 292, 'message': 'events', 'connectedUsers': 1, 'timestamp': '2016-03-19T08:59:37.600Z', 'userId': '108611793445678484173', 'level': 'info', '_id': ObjectId('57a3a39600c88030ca3fb3cc'), 'action'
+
         """
-        self._data = data
-        if not data:
+        self._ca_events_list = ca_events_list
+        if not ca_events_list:
             print('Output created with settings: "%s"' % Setts.cfg)
             self._lines = ['No data to print.']
 
@@ -48,24 +44,43 @@ class CaPrinter:
     def lines(self):
         """ List of lines to be written to output. """
         if self._lines is None:
-            print('Output created with settings: "%s"' % Setts.cfg)
+            # print('Output created with settings: "%s"' % Setts.cfg)
             self._lines = self._prepare_output()
         return self._lines
 
     def _prepare_output(self):
         out = []
-        tmp = collections.defaultdict(dict)
 
-        for line in self._data:
-            tmp[line['eventId']][line['userId']] = line['timestamp']
+        event_template = ('** Event [{event_id}] - [{description}], '
+                          'CalendarId: [{calendar_id}], '
+                          'Start/End Time: [{start_time}]/[{end_time}]')
 
-        for event_id, users in sorted(tmp.items()):
-            out.append(self._sep)
-            out.append('Event ID: %s' % event_id)
-            for user_id, timestamp in sorted(users.items(),
-                                             key=lambda x: x[1]):
-                out.append('    %s: %s' % (user_id, timestamp))
-            out.append(self._sep)
+        def print_user_list(ca_event):
+            ret = []
+            user_template = ('  User: [{user_id}] - [{display_name}], '
+                             'Joined: [{timestamp}]')
+            for usr in ca_event.event_users:
+                usr_format_data = {
+                    'user_id': usr.user_id,
+                    'display_name': usr.display_name,
+                    'timestamp': usr.timestamp,
+                }
+                txt = user_template.format(**usr_format_data)
+                ret.append(txt)
+            return ret
+
+        for each_ca_event in self._ca_events_list:
+            format_data = {
+                'event_id': each_ca_event.event_id,
+                'description': each_ca_event.description,
+                'calendar_id': each_ca_event.calendar_id,
+                'start_time': each_ca_event.start_time,
+                'end_time': each_ca_event.end_time,
+            }
+            out.append(event_template.format(**format_data))
+            out.extend(print_user_list(ca_event=each_ca_event))
+            out.append('')
+
         return out
 
     def write_terminal(self):
@@ -73,11 +88,13 @@ class CaPrinter:
             print(line)
 
     def write_file(self, f_path):
-        f_path = norm_path(f_path, mkfile=False, mkdir=False)
-        with open(f_path, 'w') as f:
-            print('* Writing to file: "%s"' % f_path)
-            f.write('\n'.join(self.lines))
-            print('* Done')
+        # TODO: update
+        return
+        # f_path = norm_path(f_path, mkfile=False, mkdir=False)
+        # with open(f_path, 'w') as f:
+        #     print('* Writing to file: "%s"' % f_path)
+        #     f.write('\n'.join(self.lines))
+        #     print('* Done')
 
 
 def norm_path(path, mkdir=True, mkfile=False, logger=None):

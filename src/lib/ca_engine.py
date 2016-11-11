@@ -3,7 +3,6 @@
 #  Engine for ca analytics
 import collections
 import logging
-from pprint import pprint
 
 import dateutil.parser
 import dateutil.relativedelta
@@ -14,6 +13,13 @@ log = logging.getLogger(__name__)
 
 
 def get_ca_events(db_data):
+    """
+    Return [CaEvent(), CaEvent(), ...]
+
+    :param db_data:
+    :return:
+    """
+
     def fill_couchdb_info(ca_events_list):
         for ca_evnt in ca_events_list:
             ca_evnt.fill_with_couch_details()
@@ -34,6 +40,8 @@ def get_ca_events(db_data):
 
 
 class CaUser:
+    display_name = None
+
     _user_id = None
     _timestamp = None
     _timestamp_str = None
@@ -92,21 +100,68 @@ class CaUser:
             log.error(self._error_msg_change,
                       'timestamp', self.user_id, self._timestamp, value)
 
+    @property
+    def couch_data(self):
+        # TODO: check if it can be copied
+        if self._couch_raw_data is not None:
+            return self._couch_raw_data.copy()
+        else:
+            return self._couch_raw_data
+
+    @couch_data.setter
+    def couch_data(self, value):
+        """
+           {'perms': {'joinEvents': True},
+           'name': {'givenName': 'V', 'familyName': 'Bnt'},
+           'displayName': 'V Bt',
+           'preferredContact': {},
+           'admin': False,
+           'id': '1001433634',
+           'link': 'https://plus.62434483634',
+           'networkList': {'391': ['1165647'],
+                           '417': ['10692356718'],
+                           '471': ['116485647'],
+                           '427': ['11034']},
+           'google_json': {'locale': 'en',
+                           'name': 'Vnt',
+                           'gender': 'female',
+                           'given_name': 'V',
+                           'email': 'v@gmail.com',
+                           'family_name': 'B',
+                           'picture': 'https://lh5.content.com/-KJAEs/kE/photo.jpg',
+                           'id': '10034',
+                           'link': 'https://plus.google.com/1034',
+                           'verified_email': True},
+           'isPlusUser': True,
+           '_rev': '60-3f9676bd925d1d5e35d7cbec75da8d90',
+           'picture': 'https://content.com/-KJkE/photo.jpg',
+           'superuser': False,
+           '_id': 'user/1034',
+           'provider': 'google',
+           'createdViaHangout': False,
+           'emails': [{'value': 'vt@gmail.com'}]}
+        """
+        self._couch_raw_data = value
+        self.display_name = value['displayName']
+
     def set_missing(self):
         log.debug('Usr [%s] - setting missing', self.user_id)
+        # TODO: Set missing for CouchDB (this should not happen often)
 
     def __hash__(self):
-        return (hash(self.user_id) ^
-                hash(self._timestamp_str))
+        # return (hash(self.user_id) ^
+        #         hash(self._timestamp_str))
+        return hash(self.user_id)
 
     def __eq__(self, other):
+        return other.user_id == self.user_id
         # TODO: Test!
-        if other.user_id != self.user_id:
-            return other.user_id < self.user_id
-        elif other.timestamp == self.timestamp:  # All equal!
-            return other.timestamp == self.timestamp
-        else:  # Same id, compare based on timestampe
-            return other.timestamp < self.timestamp
+        # if other.user_id != self.user_id:
+        #     return other.user_id < self.user_id
+        # elif other.timestamp == self.timestamp:  # All equal!
+        #     return other.timestamp == self.timestamp
+        # else:  # Same id, compare based on timestampe
+        #     return other.timestamp < self.timestamp
 
     def __gt__(self, other):
         return other.user_id < self.user_id
@@ -153,7 +208,6 @@ class EventUsers:
             self._users_list.append(ca_user)
 
 
-
 class CaEvent:
     _event_id = None
     _event_users = None
@@ -196,12 +250,31 @@ class CaEvent:
     @start_time.setter
     def start_time(self, value):
         """ Sets EventId for this class. """
-        value = dateutil.parser.parse(value)
+        try:
+            value = dateutil.parser.parse(value)
+        except AttributeError as e:
+            # TODO: add stack
+            log.debug(e)
+            self._start_time = COUCH_DB_MISSING_DATA
+            self._end_time = COUCH_DB_MISSING_DATA
+            return
         if self._start_time is None:
             self._start_time = value
         elif self._start_time != value:
             log.error(self._error_msg_change,
                       'start_time', self.event_id, self._start_time, value)
+
+    @property
+    def couch_data(self):
+        return self._couch_data.copy()
+
+    @couch_data.setter
+    def couch_data(self, value):
+        if self._couch_data is None:
+            self._couch_data = value
+        elif self._couch_data != value:
+            log.error(self._error_msg_change,
+                      'couch_data', self.event_id, self._couch_data, value)
 
     @property
     def end_time(self):
@@ -261,10 +334,10 @@ class CaEvent:
             self.duration = event_data['duration']
 
         def update_child_user_data(child_user, row):
-            # log.error('Updating user [%s] with [%s]', child_user, row)
-            pass
+            log.debug('Updating user [%s] with [%s]', child_user, row)
+            child_user.couch_data = row.value
 
-        def update_data():
+        def assign_data():
             """
             Update this event details and all child users of this event with
              CoachDB data.
@@ -278,40 +351,35 @@ class CaEvent:
             def this_event():
                 try:
                     update_event_data(
-                        row=self._couch_data.get(self.event_id)
+                        row=self.couch_data.get(self.event_id)
                     )
-                except AttributeError:
-                    log.error('No event for id [%s] found in CouchDB. '
-                              'Setting fields as missing for this event. '
-                              'In CouchDB found: %s',
-                              self.event_id, self._couch_data.keys())
+                except AttributeError as e:
+                    log.error("Event [%s] wasn't found in CouchDB. "
+                              "Got keys [%s]. Setting fields as missing. "
+                              "Error: [%s]",
+                              self.event_id, self.couch_data.keys(), e)
+                    # TODO: debug, print stack
                     self.set_missing()
 
+            def child_users():
+                log.debug('Updating info from CoachDB for users: %s',
+                          self.event_users)
+                for usr in self.event_users:
+                    try:
+                        row = self._couch_data[usr.user_id]
+                        update_child_user_data(child_user=usr, row=row)
+                    except KeyError:
+                        log.error("User [%s] wasn't found in CouchDB. "
+                                  "Setting user missing. %s", usr.user_id,
+                                  self._couch_data)
+                        usr.set_missing()
+
             this_event()
-
-            for usr in self.event_users:
-                try:
-                    row = self._couch_data[usr.user_id]
-                    update_child_user_data(child_user=usr, row=row)
-                except KeyError:
-                    log.error("User [%s] wasn't found in CouchDB. "
-                              "Setting user missing. %s", usr.user_id, self._couch_data)
-                    usr.set_missing()
-
+            child_users()
 
         self._update_with_couch_db_data()
-        update_data()
-        # sys.exit()
-        # for row in self._couch_raw_data:
-        # print(row.value.get('_id', 'error!'))
-        # if row.id.startswith('event/'):
-        #     update_event_data(row_=row)
-        # else:
-        #     pass
-        # print('aaa')
-        # print(row.value)
 
-        # TODO: Get CouchDB details about users
+        assign_data()
 
     def _update_with_couch_db_data(self):
         """
@@ -324,13 +392,14 @@ class CaEvent:
                                          user_ids=users_id_list)
         self._couch_raw_data = tuple(couch_data)
         # For ease & convenience
-        self._couch_data = {int(row.value.get('id', '-1')): row
-                            for row in self._couch_raw_data}
+        self.couch_data = {int(row.value.get('id', '-1')): row
+                           for row in self._couch_raw_data}
 
     def set_missing(self):
         self.description = COUCH_DB_MISSING_DATA
         self.calendar_id = COUCH_DB_MISSING_DATA
         self._start_time = COUCH_DB_MISSING_DATA
+        self._end_time = COUCH_DB_MISSING_DATA
         self.duration = COUCH_DB_MISSING_DATA
 
     @staticmethod
