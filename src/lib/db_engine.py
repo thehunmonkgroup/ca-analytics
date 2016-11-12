@@ -15,6 +15,7 @@ log = logging.getLogger(__name__)
 class MongoData:
     _filter_join_events = {'action': 'join', 'message': 'events'}
     _TIME_TEMPLATE = '%sT00:00:00.000Z'
+    db_mongo = None
 
     def __init__(self, connection_string, database_name):
         self._client = MongoClient(connection_string)
@@ -171,6 +172,7 @@ class CouchData:
             }
         }
         '''
+    db_couch = None
 
     def __init__(self, connection_string, database_name):
         self._client = couchdb.Server(connection_string)
@@ -189,6 +191,7 @@ class CouchData:
 
         def make_iterable(evnt_ids=event_ids, usr_ids=user_ids):
             # Correctness of ids is checked later
+            # TODO: Import it from extras
 
             if is_string(val=evnt_ids) or not is_iterable(val=evnt_ids):
                 log.debug('Converting to iterable evnt_ids: %s', evnt_ids)

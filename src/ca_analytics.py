@@ -9,7 +9,7 @@ from os.path import join as j
 
 from lib.ca_engine import get_ca_events
 from lib.db_engine import init_db
-from lib.extras import configure_argparse, Setts, CaPrinter
+from lib.extras import configure_argparse, Setts, OutputHandler
 
 rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
 if rwd not in sys.path:
@@ -35,11 +35,11 @@ def evaluate_arguments():
     # pprint(line.user_list)
 
     # print('** bbb')
-    printer = CaPrinter(ca_events_list=ca_event_list)
-    if Setts.OUT_DEST.value:
-        printer.write_file(f_path=Setts.OUT_DEST.value)
-    else:
-        printer.write_terminal()
+    printer = OutputHandler(ca_events_list=ca_event_list)
+    # if Setts.OUT_DEST.value:
+    #     printer.write_file(f_path=Setts.OUT_DEST.value)
+    # else:
+    #     printer.write_terminal()
 
 
 def main(start_cmd=None):

@@ -325,7 +325,7 @@ class CaEvent:
                           'start_time': row.value['dateAndTime'],
                           'duration': row.value['duration']}
 
-            log.error('Updating event [%s] with row: %s', self.event_id, row)
+            log.debug('Updating event [%s] with row: %s', self.event_id, row)
 
             self.description = event_data['description']
             self.calendar_id = event_data['calendar_id']

@@ -19,11 +19,22 @@ is_string = lambda val: isinstance(val, str)
 is_iterable = lambda val: isinstance(val, collections.Iterable)
 
 
+def make_iterable(evnt_ids='None', usr_ids='None'):
+    # Correctness of ids is checked later
+    if is_string(val=evnt_ids) or not is_iterable(val=evnt_ids):
+        log.debug('Converting to iterable evnt_ids: %s', evnt_ids)
+        evnt_ids = [evnt_ids]
+    if is_string(val=usr_ids) or not is_iterable(val=usr_ids):
+        log.debug('Converting to iterable usr_ids: %s', usr_ids)
+        usr_ids = [usr_ids]
+    return evnt_ids, usr_ids
+
+
 def get_couchdb_id(event_id):
     return str(event_id).rjust(5, '0')
 
 
-class CaPrinter:
+class OutputHandler:
     _ca_events_list = None
     _lines = None
     _sep = '-' * 25
