@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 from abc import ABCMeta
+from collections import namedtuple
 
 from unittest.mock import MagicMock
 
@@ -30,7 +31,21 @@ class ClassProperty(property):
         return self.fget.__get__(None, owner)()
 
 
-class BaseEventMock(metaclass=ABCMeta):
+MongoLogSetup = namedtuple('mongo_log_setup', ['event_id',
+                                               'timestamps_from_earliest'])
+
+
+class ObjectId:
+    """ Dummy for MongoDB data. """
+
+    def __init__(self, foo):
+        self.foo = foo
+
+    def __repr__(self):
+        return "ObjectId('%s')" % self.foo
+
+
+class BaseCouchEventMock(metaclass=ABCMeta):
     eventId = None
     dateAndTime = None
     _resp_value = None
@@ -38,11 +53,11 @@ class BaseEventMock(metaclass=ABCMeta):
     @classmethod
     def get_couch_mock(cls):
         return get_couch_row_mock(id=cls.couch_id_name, key=cls.eventId,
-                                  value=cls.resp_value)
+                                  value=cls.couch_value_response)
 
     @ClassProperty
     @classmethod
-    def resp_value(cls):
+    def couch_value_response(cls):
         ret = cls._resp_value.copy()
         ret['id'] = str(cls.eventId)
         ret['_id'] = cls.couch_id_name
@@ -55,7 +70,98 @@ class BaseEventMock(metaclass=ABCMeta):
         return 'event/%s' % str(cls.eventId).ljust(5, '0')
 
 
-class Event111(BaseEventMock):
+class BaseCouchUserMock(metaclass=ABCMeta):
+    userId = None
+    givenName = None
+    familyName = None
+    emails = None
+    google_json = {
+        'verified_email': True,
+        'given_name': 'Fake',
+        'picture': 'https://lh4.googleusercontent.com/-yI/photo.jpg',
+        'email': 'fake@example.com',
+        'family_name': 'Fake',
+        'gender': 'male',
+        'link': 'https://plus.google.com/+Fake',
+        'id': '102144444444444444444',
+        'locale': 'de',
+        'name': 'Fake Fake',
+    }
+
+    _couch_value = None
+
+    @classmethod
+    def get_couch_mock(cls):
+        return get_couch_row_mock(id=cls.couch_id_name, key=cls.userId,
+                                  value=cls.couch_value_response)
+
+    @ClassProperty
+    @classmethod
+    def couch_value_response(cls):
+        ret = cls._couch_value.copy()
+        ret['id'] = str(cls.userId)
+        ret['_id'] = cls.couch_id_name
+        ret['displayName'] = '%s %s' % (cls.givenName, cls.familyName)
+        name = {'familyName': cls.familyName,
+                'givenName': cls.givenName}
+        ret['name'] = name
+        ret['emails'] = cls.emails
+        ret['google_json'] = cls.google_json
+        return ret
+
+    @ClassProperty
+    @classmethod
+    def couch_id_name(cls):
+        return 'user/%s' % cls.userId
+
+
+class BaseMongoUserMock(metaclass=ABCMeta):
+    userId = None
+    _participated_in = []
+
+    _LOG_TEMPLATE = {
+        '_id': None,
+        'action': 'join',
+        'connectedUsers': 0,
+        'eventId': None,
+        'level': 'info',
+        'message': 'events',
+        'timestamp': None,
+        'userId': None
+    }
+
+    @classmethod
+    def get_mongo_response(cls):
+
+        def get_logs_for_this_event(event_id, timestamps_list):
+            ret_ = []
+            for timestamp in timestamps_list:
+                entry = cls._get_log_entry(eventId=event_id,
+                                           timestamp=timestamp)
+                ret.append(entry)
+            return ret_
+
+        ret = []
+        for log_setup in cls._participated_in:
+            log_entries = get_logs_for_this_event(
+                event_id=log_setup.event_id,
+                timestamps_list=log_setup.timestamps_from_earliest
+            )
+            ret.extend(log_entries)
+        return ret
+
+    @classmethod
+    def _get_log_entry(cls, eventId, timestamp):
+        ret = cls._LOG_TEMPLATE.copy()
+        # TODO: Generate it
+        ret['_id'] = ObjectId('57a3a39800c88030ca42d248')
+        ret['userId'] = cls.userId
+        ret['eventId'] = eventId
+        ret['timestamp'] = timestamp
+        return ret
+
+
+class Event111(BaseCouchEventMock):
     eventId = 111
     dateAndTime = '2016-05-12T19:00:00+00:00'
 
@@ -110,7 +216,7 @@ class Event111(BaseEventMock):
     }
 
 
-class Event222(BaseEventMock):
+class Event222(BaseCouchEventMock):
     eventId = 222
     dateAndTime = '2016-07-02T17:00:00+00:00'
 
@@ -173,52 +279,7 @@ class Event222(BaseEventMock):
     }
 
 
-class BaseUserMock(metaclass=ABCMeta):
-    userId = None
-    givenName = None
-    familyName = None
-    emails = None
-    google_json = {
-        'verified_email': True,
-        'given_name': 'Fake',
-        'picture': 'https://lh4.googleusercontent.com/-yI/photo.jpg',
-        'email': 'fake@example.com',
-        'family_name': 'Fake',
-        'gender': 'male',
-        'link': 'https://plus.google.com/+Fake',
-        'id': '102144444444444444444',
-        'locale': 'de',
-        'name': 'Fake Fake',
-    }
-
-    _couch_value = None
-
-    @classmethod
-    def get_couch_mock(cls):
-        return get_couch_row_mock(id=cls.couch_id_name, key=cls.userId,
-                                  value=cls.couch_value_response)
-
-    @ClassProperty
-    @classmethod
-    def couch_value_response(cls):
-        ret = cls._couch_value.copy()
-        ret['id'] = str(cls.userId)
-        ret['_id'] = cls.couch_id_name
-        ret['displayName'] = '%s %s' % (cls.givenName, cls.familyName)
-        name = {'familyName': cls.familyName,
-                'givenName': cls.givenName}
-        ret['name'] = name
-        ret['emails'] = cls.emails
-        ret['google_json'] = cls.google_json
-        return ret
-
-    @ClassProperty
-    @classmethod
-    def couch_id_name(cls):
-        return 'user/%s' % cls.userId
-
-
-class User111(BaseUserMock):
+class User111(BaseCouchUserMock, BaseMongoUserMock):
     userId = 102137774477271133111
     givenName = 'John'
     familyName = 'Doe'
@@ -247,8 +308,26 @@ class User111(BaseUserMock):
         'google_json': None
     }
 
+    _participated_in = [
+        MongoLogSetup(event_id=Event111.eventId,
+                      timestamps_from_earliest=[
+                          '2016-05-12T16:53:36.363Z',
+                          '2016-05-12T17:48:03.286Z',
+                          '2016-05-12T17:50:35.528Z',
+                          '2016-05-12T19:00:11.024Z',
+                          '2016-05-12T19:01:16.784Z',
+                      ]),
+        MongoLogSetup(event_id=Event222.eventId,
+                      timestamps_from_earliest=[
+                          '2016-07-02T16:59:56.186Z',
+                          '2016-07-02T16:59:58.835Z',
+                          '2016-07-02T17:00:21.574Z',
+                          '2016-07-02T18:02:34.475Z',
+                      ]),
+    ]
 
-class User222(BaseUserMock):
+
+class User222(BaseCouchUserMock, BaseMongoUserMock):
     userId = 107452622478341478222
     givenName = 'Luís'
     familyName = 'Bäcker '
@@ -274,7 +353,12 @@ class User222(BaseUserMock):
         'google_json': None
     }
 
-
-class ObjectId:
-    def __init__(self, asd):
-        self.asd = asd
+    _participated_in = [
+        MongoLogSetup(event_id=Event111.eventId,
+                      timestamps_from_earliest=[
+                          '2016-05-12T14:46:04.450Z',
+                          '2016-05-12T17:51:24.633Z',
+                          '2016-05-12T19:01:01.030Z',
+                          '2016-05-12T20:15:17.536Z',
+                      ]),
+    ]
