@@ -7,8 +7,9 @@ import os
 import sys
 from abc import ABCMeta
 from collections import namedtuple
-
 from unittest.mock import MagicMock
+
+from lib.extras import make_iterable
 
 rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
 if rwd not in sys.path:
@@ -23,6 +24,8 @@ def get_couch_row_mock(id, key, value):
     mock_couch_response.id = id
     mock_couch_response.key = key
     mock_couch_response.value = value
+    mock_couch_response.value = value
+
     return mock_couch_response
 
 
@@ -362,3 +365,60 @@ class User222(BaseCouchUserMock, BaseMongoUserMock):
                           '2016-05-12T20:15:17.536Z',
                       ]),
     ]
+
+
+class ResponseFactory:
+    NOT_CALLED = 'not called'
+    sample_users = [
+        User111,
+        User222
+    ]
+    sample_events = [
+        Event111,
+        Event222
+    ]
+
+    @classmethod
+    def get_all_mongo_logs(cls):
+        ret = []
+        for sample_user in cls.sample_users:
+            ret.extend(sample_user.get_mongo_response())
+        return ret
+
+    @classmethod
+    def get_all_couch_responses(cls):
+        ret = []
+        for sample_user in cls.sample_users:
+            ret.append(sample_user.get_couch_mock())
+        for sample_event in cls.sample_events:
+            ret.append(sample_event.get_couch_mock())
+        return ret
+
+    @classmethod
+    def mongo_get_data_side_effect(cls, event_ids=NOT_CALLED,
+                                   user_ids=NOT_CALLED):
+        # print('called mongo_side_effect with:', {'event_ids': event_ids,
+        #                                          'user_ids': user_ids})
+
+        event_ids, user_ids = make_iterable(evnt_ids=event_ids,
+                                            usr_ids=user_ids)
+        ret = [entry for entry in cls.get_all_mongo_logs()
+               if entry['eventId'] in event_ids or entry['userId'] in user_ids]
+        return ret
+
+    @classmethod
+    def couch_get_data_side_effect(cls, event_ids=NOT_CALLED,
+                                   user_ids=NOT_CALLED):
+        # print('called couch_side_effect with:', {'event_ids': event_ids,
+        #                                          'user_ids': user_ids})
+
+        event_ids, user_ids = make_iterable(evnt_ids=event_ids,
+                                            usr_ids=user_ids)
+        # Default value is None or string from it
+        selected_ids = [each for each in event_ids + user_ids
+                        if each not in ('None', None)]
+
+        # Check if row is for what we've asked
+        ret = [row for row in cls.get_all_couch_responses()
+               if row.key in selected_ids]
+        return ret
