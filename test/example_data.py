@@ -9,6 +9,8 @@ from abc import ABCMeta
 from collections import namedtuple
 from unittest.mock import MagicMock
 
+import dateutil
+
 from lib.extras import make_iterable
 
 rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
@@ -69,6 +71,24 @@ class BaseCouchEventMock(metaclass=ABCMeta):
 
     @ClassProperty
     @classmethod
+    def description(cls):
+        ret = cls._resp_value['description']
+        return ret
+
+    @ClassProperty
+    @classmethod
+    def calendar_id(cls):
+        ret = cls._resp_value['calendarId']
+        return ret
+
+    @ClassProperty
+    @classmethod
+    def start_time(cls):
+        ret = dateutil.parser.parse(cls.dateAndTime)
+        return ret
+
+    @ClassProperty
+    @classmethod
     def couch_id_name(cls):
         return 'event/%s' % str(cls.eventId).ljust(5, '0')
 
@@ -104,7 +124,7 @@ class BaseCouchUserMock(metaclass=ABCMeta):
         ret = cls._couch_value.copy()
         ret['id'] = str(cls.userId)
         ret['_id'] = cls.couch_id_name
-        ret['displayName'] = '%s %s' % (cls.givenName, cls.familyName)
+        ret['displayName'] = cls.display_name
         name = {'familyName': cls.familyName,
                 'givenName': cls.givenName}
         ret['name'] = name
@@ -114,12 +134,18 @@ class BaseCouchUserMock(metaclass=ABCMeta):
 
     @ClassProperty
     @classmethod
+    def display_name(cls):
+        return '%s %s' % (cls.givenName, cls.familyName)
+
+    @ClassProperty
+    @classmethod
     def couch_id_name(cls):
         return 'user/%s' % cls.userId
 
 
 class BaseMongoUserMock(metaclass=ABCMeta):
     userId = None
+    # Timestamps must be in ascending order
     _participated_in = []
 
     _LOG_TEMPLATE = {
@@ -152,6 +178,14 @@ class BaseMongoUserMock(metaclass=ABCMeta):
             )
             ret.extend(log_entries)
         return ret
+
+    @classmethod
+    def get_earliest_timestamp(cls, event_id):
+        # dateutil.parser.parse
+        event = [e for e in cls._participated_in if e.event_id == event_id][0]
+        earliest_timestamp = event.timestamps_from_earliest[0]
+        # earliest_timestamp = '2016-05-12T17:51:24.633Z'
+        return dateutil.parser.parse(earliest_timestamp)
 
     @classmethod
     def _get_log_entry(cls, eventId, timestamp):
@@ -377,6 +411,22 @@ class ResponseFactory:
         Event111,
         Event222
     ]
+
+    @classmethod
+    def get_all_users_attending_event(cls, event_id):
+        ret = []
+
+        def user_attended(usr):
+            for event_attended in usr._participated_in:
+                if event_attended.event_id == event_id:
+                    return True
+            return False
+
+        for user in cls.sample_users:
+            if user_attended(user):
+                ret.append(user)
+
+        return ret
 
     @classmethod
     def get_all_mongo_logs(cls):
