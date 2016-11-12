@@ -249,3 +249,30 @@ class User111(BaseUserMock):
                         '86': ['100597781244444444444']},
         'google_json': None
     }
+
+
+class User222(BaseUserMock):
+    userId = 107452622478341478222
+    givenName = 'Luís'
+    familyName = 'Bäcker '
+    emails = [{'value': 'luis_backer@example.com'}]
+
+    _mongo_value = {
+        'perms': {'joinEvents': False},
+        'picture': 'https://lh3.googleusercontent.com/-X5M/photo.jpg',
+        'link': 'https://plus.google.com/107',
+        '_rev': '74-47ce5c69e1c3eebb3e9e58f444060bea',
+        'provider': 'google',
+        'isPlusUser': True,
+        'admin': False,
+        'displayName': None,
+        '_id': None,
+        'name': None,
+        'preferredContact': {},
+        'emails': None,
+        'superuser': False,
+        'createdViaHangout': False,
+        'id': None,
+        'networkList': {},
+        'google_json': None
+    }
