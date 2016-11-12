@@ -16,17 +16,13 @@ if rwd not in sys.path:
 log = logging.getLogger(__name__)
 
 
-def get_mongo_row_mock(id, key, value):
-    mock_mongo_response = MagicMock(spec=['id', 'key', 'value'],
+def get_couch_row_mock(id, key, value):
+    mock_couch_response = MagicMock(spec=['id', 'key', 'value'],
                                     name='Row')
-    mock_mongo_response.id = id
-    mock_mongo_response.key = key
-    mock_mongo_response.value = value
-    return mock_mongo_response
-
-
-def get_event_name(evnt_id):
-    return 'event/%s' % str(evnt_id).ljust(5, '0')
+    mock_couch_response.id = id
+    mock_couch_response.key = key
+    mock_couch_response.value = value
+    return mock_couch_response
 
 
 class ClassProperty(property):
@@ -40,8 +36,8 @@ class BaseEventMock(metaclass=ABCMeta):
     _resp_value = None
 
     @classmethod
-    def get_mongo_mock(cls):
-        return get_mongo_row_mock(id=cls.get_mongo_id(), key=cls.eventId,
+    def get_couch_mock(cls):
+        return get_couch_row_mock(id=cls.couch_id_name, key=cls.eventId,
                                   value=cls.resp_value)
 
     @ClassProperty
@@ -49,13 +45,14 @@ class BaseEventMock(metaclass=ABCMeta):
     def resp_value(cls):
         ret = cls._resp_value.copy()
         ret['id'] = str(cls.eventId)
-        ret['_id'] = cls.get_mongo_id()
+        ret['_id'] = cls.couch_id_name
         ret['dateAndTime'] = cls.dateAndTime
         return ret
 
+    @ClassProperty
     @classmethod
-    def get_mongo_id(cls):
-        return get_event_name(evnt_id=cls.eventId)
+    def couch_id_name(cls):
+        return 'event/%s' % str(cls.eventId).ljust(5, '0')
 
 
 class Event111(BaseEventMock):
@@ -194,19 +191,19 @@ class BaseUserMock(metaclass=ABCMeta):
         'name': 'Fake Fake',
     }
 
-    _mongo_value = None
+    _couch_value = None
 
     @classmethod
-    def get_mongo_mock(cls):
-        return get_mongo_row_mock(id=cls.mongo_id, key=cls.userId,
-                                  value=cls.mongo_value)
+    def get_couch_mock(cls):
+        return get_couch_row_mock(id=cls.couch_id_name, key=cls.userId,
+                                  value=cls.couch_value_response)
 
     @ClassProperty
     @classmethod
-    def mongo_value(cls):
-        ret = cls._mongo_value.copy()
+    def couch_value_response(cls):
+        ret = cls._couch_value.copy()
         ret['id'] = str(cls.userId)
-        ret['_id'] = cls.mongo_id
+        ret['_id'] = cls.couch_id_name
         ret['displayName'] = '%s %s' % (cls.givenName, cls.familyName)
         name = {'familyName': cls.familyName,
                 'givenName': cls.givenName}
@@ -217,7 +214,7 @@ class BaseUserMock(metaclass=ABCMeta):
 
     @ClassProperty
     @classmethod
-    def mongo_id(cls):
+    def couch_id_name(cls):
         return 'user/%s' % cls.userId
 
 
@@ -227,7 +224,7 @@ class User111(BaseUserMock):
     familyName = 'Doe'
     emails = [{'value': 'fake_john_doe@gmail.com'}]
 
-    _mongo_value = {
+    _couch_value = {
         'perms': {'joinEvents': False,
                   'createEvents': True},
         'picture': 'https://lh4.googleusercontent.com/-yI/photo.jpg',
@@ -257,7 +254,7 @@ class User222(BaseUserMock):
     familyName = 'Bäcker '
     emails = [{'value': 'luis_backer@example.com'}]
 
-    _mongo_value = {
+    _couch_value = {
         'perms': {'joinEvents': False},
         'picture': 'https://lh3.googleusercontent.com/-X5M/photo.jpg',
         'link': 'https://plus.google.com/107',
@@ -276,3 +273,8 @@ class User222(BaseUserMock):
         'networkList': {},
         'google_json': None
     }
+
+
+class ObjectId:
+    def __init__(self, asd):
+        self.asd = asd
