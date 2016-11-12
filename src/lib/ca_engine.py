@@ -52,6 +52,7 @@ class CaUser:
     # TODO: Proper error handling
     _error_msg_change = ('Tried to change [%s] of the user [%s]! [%s]->[%s]. '
                          'This should never happen. Statistics may be corrupted.')
+    _str_representation_templ = 'User: [%s] - [%s], Joined: [%s]'
 
     def __init__(self, log_entry):
         """
@@ -149,13 +150,14 @@ class CaUser:
         # TODO: Set missing for CouchDB (this should not happen often)
 
     def __hash__(self):
+        return hash(self.user_id)
+        # Show all users
         # return (hash(self.user_id) ^
         #         hash(self._timestamp_str))
-        return hash(self.user_id)
 
     def __eq__(self, other):
         return other.user_id == self.user_id
-        # TODO: Test!
+        # Show all users
         # if other.user_id != self.user_id:
         #     return other.user_id < self.user_id
         # elif other.timestamp == self.timestamp:  # All equal!
@@ -164,10 +166,19 @@ class CaUser:
         #     return other.timestamp < self.timestamp
 
     def __gt__(self, other):
+        # Sort by id
         return other.user_id < self.user_id
+        # Sort by time entered
+        # return other.timestamp < self.timestamp
+        # Sort by id & time one hopped in
+        # if other.user_id == self.user_id:
+        #     return other.timestamp < self.timestamp
+        # else:
+        #     return other.user_id < self.user_id
 
     def __str__(self):
-        return 'userId [%s]@[%s]' % (self.user_id, self.timestamp)
+        data_for_templ = self.user_id, self.display_name, self.timestamp
+        return self._str_representation_templ % data_for_templ
 
     def __repr__(self):
         return 'userId [%s]@[%s]' % (self.user_id, self.timestamp)
@@ -225,6 +236,10 @@ class CaEvent:
     # TODO: Proper error handling
     _error_msg_change = ('Tried to change [%s] of the event [%s]! [%s]->[%s]. '
                          'This should never happen. Statistics may be corrupted.')
+    _str_representation_templ = (
+        '** Event [{event_id}] - [{description}], CalendarId: [{calendar_id}],'
+        ' Start/End Time: [{start_time}]/[{end_time}]'
+    )
 
     def __init__(self):
         self._event_users = EventUsers()
@@ -407,6 +422,16 @@ class CaEvent:
                                               user_ids=user_ids)
 
     def __str__(self):
+        format_data = {
+            'event_id': self.event_id,
+            'description': self.description,
+            'calendar_id': self.calendar_id,
+            'start_time': self.start_time,
+            'end_time': self.end_time,
+        }
+        return self._str_representation_templ.format(**format_data)
+
+    def __repr__(self):
         txt = 'eventId [%s] users_count [%s] time [%s]-[%s] description [%s]'
         return txt % (self.event_id, len(self.event_users),
                       self.start_time, self.end_time, self.description)

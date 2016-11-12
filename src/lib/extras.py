@@ -38,6 +38,7 @@ class OutputHandler:
     _ca_events_list = None
     _lines = None
     _sep = '-' * 25
+    _user_print_templ = '  %s'
 
     def __init__(self, ca_events_list):
         """
@@ -62,34 +63,11 @@ class OutputHandler:
     def _prepare_output(self):
         out = []
 
-        event_template = ('** Event [{event_id}] - [{description}], '
-                          'CalendarId: [{calendar_id}], '
-                          'Start/End Time: [{start_time}]/[{end_time}]')
-
-        def print_user_list(ca_event):
-            ret = []
-            user_template = ('  User: [{user_id}] - [{display_name}], '
-                             'Joined: [{timestamp}]')
-            for usr in ca_event.event_users:
-                usr_format_data = {
-                    'user_id': usr.user_id,
-                    'display_name': usr.display_name,
-                    'timestamp': usr.timestamp,
-                }
-                txt = user_template.format(**usr_format_data)
-                ret.append(txt)
-            return ret
-
         for each_ca_event in self._ca_events_list:
-            format_data = {
-                'event_id': each_ca_event.event_id,
-                'description': each_ca_event.description,
-                'calendar_id': each_ca_event.calendar_id,
-                'start_time': each_ca_event.start_time,
-                'end_time': each_ca_event.end_time,
-            }
-            out.append(event_template.format(**format_data))
-            out.extend(print_user_list(ca_event=each_ca_event))
+            out.append(str(each_ca_event))
+            user_list = [self._user_print_templ % str(usr) for usr
+                         in each_ca_event.event_users]
+            out.extend(user_list)
             out.append('')
 
         return out

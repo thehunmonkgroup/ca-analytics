@@ -36,10 +36,10 @@ def evaluate_arguments():
 
     # print('** bbb')
     printer = OutputHandler(ca_events_list=ca_event_list)
-    # if Setts.OUT_DEST.value:
-    #     printer.write_file(f_path=Setts.OUT_DEST.value)
-    # else:
-    #     printer.write_terminal()
+    if Setts.OUT_DEST.value:
+        printer.write_file(f_path=Setts.OUT_DEST.value)
+    else:
+        printer.write_terminal()
 
 
 def main(start_cmd=None):
@@ -60,14 +60,13 @@ def main(start_cmd=None):
     evaluate_arguments()
 
 
-version = {'y': 2016, 'm': 11, 'd': 11}
+version = {'y': 2016, 'm': 11, 'd': 12}
 __version__ = '{y}.{m}.{d}'.format(**version)
 
 if __name__ == '__main__':
     try:
         # TODO: Add logging
         # TODO: docker CoachDB & MongoDB
-        # TODO: Some test
         main()
     except Exception as e:
         log.exception(e)
