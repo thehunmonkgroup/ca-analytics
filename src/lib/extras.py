@@ -17,6 +17,7 @@ COUCH_DB_MISSING_DATA = 'Missing CouchDB data'
 
 is_string = lambda val: isinstance(val, str)
 is_iterable = lambda val: isinstance(val, collections.Iterable)
+strftime_format = '%Y-%m-%d %H:%M:%S'
 
 
 def make_iterable(evnt_ids='None', usr_ids='None'):
@@ -37,15 +38,12 @@ def get_couchdb_id(event_id):
 class OutputHandler:
     _ca_events_list = None
     _lines = None
-    _sep = '-' * 25
     _user_print_templ = '  %s'
 
     def __init__(self, ca_events_list):
         """
         Here is raw data. During printing/writing to file it's converted in
         `_prepare_output`.:
-
-
         """
         self._ca_events_list = ca_events_list
         if not ca_events_list:
@@ -77,13 +75,11 @@ class OutputHandler:
             print(line)
 
     def write_file(self, f_path):
-        # TODO: update
-        return
-        # f_path = norm_path(f_path, mkfile=False, mkdir=False)
-        # with open(f_path, 'w') as f:
-        #     print('* Writing to file: "%s"' % f_path)
-        #     f.write('\n'.join(self.lines))
-        #     print('* Done')
+        f_path = norm_path(f_path, mkfile=False, mkdir=False)
+        with open(f_path, 'w') as f:
+            print('* Writing to file: "%s"' % f_path)
+            f.write('\n'.join(self.lines))
+            print('* Done')
 
 
 def norm_path(path, mkdir=True, mkfile=False, logger=None):

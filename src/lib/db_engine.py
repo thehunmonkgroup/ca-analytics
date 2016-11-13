@@ -191,7 +191,6 @@ class CouchData:
 
         def make_iterable(evnt_ids=event_ids, usr_ids=user_ids):
             # Correctness of ids is checked later
-            # TODO: Import it from extras
 
             if is_string(val=evnt_ids) or not is_iterable(val=evnt_ids):
                 log.debug('Converting to iterable evnt_ids: %s', evnt_ids)
@@ -223,6 +222,10 @@ class CouchData:
                 :param val:
                 :return:
                 """
+                # TODO: I think it was changed and now we are passing always
+                #   string. So maybe no need for this.
+                #   Generally refactor and unify str/int ids/keys from db in
+                #   our models.
                 return val in ('None', '')
 
             evnt_templ = 'event/%s'
@@ -241,22 +244,15 @@ class CouchData:
 
             return ret
 
+        # TODO: logging!
+        # TODO: Import make_iterable from extras
         event_ids, user_ids = make_iterable(evnt_ids=event_ids,
                                             usr_ids=user_ids)
-        # print('event_ids:', event_ids, 'user_ids:', user_ids)
 
         search_vals = get_search_values(evnt_ids=event_ids, usr_ids=user_ids)
-        # print('Search vals:', search_vals)
-
         search_query = self.QUERY_LIST % "', '".join(search_vals)
 
-        # print('search_query:', search_query)
         results = self.db_couch.query(search_query)
-        # pprint(results.rows)
-        # map_fun = self.query_event % event_ids
-        # results = self.db_couch.query(map_fun)
-        # print(results.rows)
-
         return results.rows
 
 

@@ -7,7 +7,7 @@ import logging
 import dateutil.parser
 import dateutil.relativedelta
 
-from lib.extras import Setts, COUCH_DB_MISSING_DATA
+from lib.extras import Setts, COUCH_DB_MISSING_DATA, strftime_format
 
 log = logging.getLogger(__name__)
 
@@ -28,13 +28,13 @@ def get_ca_events(db_data):
     events = collections.defaultdict(CaEvent)
 
     for row in db_data:
-        # print('processing:', row)
         eventId = row['eventId']
         events[eventId].append(log_entry=row)
 
-    # Get rid of dict, and sort by id
+    # Get rid of dict, and sort events by id
     ret = sorted(events.values(), key=lambda x: x.event_id)
 
+    # TODO: Can be done in a more elegant way?
     fill_couchdb_info(ca_events_list=ret)
     return ret
 
@@ -146,18 +146,18 @@ class CaUser:
         self.display_name = value['displayName']
 
     def set_missing(self):
-        log.debug('Usr [%s] - setting missing', self.user_id)
+        log.warning('Usr [%s] - setting missing (TODO)', self.user_id)
         # TODO: Set missing for CouchDB (this should not happen often)
 
     def __hash__(self):
         return hash(self.user_id)
-        # Show all users
+        ## Show all users
         # return (hash(self.user_id) ^
         #         hash(self._timestamp_str))
 
     def __eq__(self, other):
         return other.user_id == self.user_id
-        # Show all users
+        ## Show all users
         # if other.user_id != self.user_id:
         #     return other.user_id < self.user_id
         # elif other.timestamp == self.timestamp:  # All equal!
@@ -166,18 +166,19 @@ class CaUser:
         #     return other.timestamp < self.timestamp
 
     def __gt__(self, other):
-        # Sort by id
-        return other.user_id < self.user_id
-        # Sort by time entered
-        # return other.timestamp < self.timestamp
-        # Sort by id & time one hopped in
+        ## Sort by id
+        # return other.user_id < self.user_id
+        ## Sort by time entered
+        return other.timestamp < self.timestamp
+        ## Sort by id & time one hopped in
         # if other.user_id == self.user_id:
         #     return other.timestamp < self.timestamp
         # else:
         #     return other.user_id < self.user_id
 
     def __str__(self):
-        data_for_templ = self.user_id, self.display_name, self.timestamp
+        data_for_templ = (self.user_id, self.display_name,
+                          self.timestamp.strftime(strftime_format))
         return self._str_representation_templ % data_for_templ
 
     def __repr__(self):
@@ -185,6 +186,13 @@ class CaUser:
 
 
 class EventUsers:
+    """
+    Important handler class for users attending the event.
+    Knows about all users from this event.
+
+    If you want to get all users from particular event, you must change hash
+      algorithm of the CaUser class, so that set() won't throw it out.
+    """
     _users_list = None
 
     @property
@@ -195,20 +203,21 @@ class EventUsers:
 
         :return:
         """
-        # TODO: earliest time they joined an event
         if self._users_list is None:
             log.warning('Accessing uninitialized user list')
             return []
         else:
+            # Earliest date is returned, cos the first object in set is
+            # retained.
+            # As it happens with logs-earliest date comes first. And this is
+            # the object that is retained in set. The rest (later mentions of
+            # user connecting to the event) is disposed. Can we relay on it?
             return sorted(set(self._users_list))
 
     @property
     def unique_ids(self):
         ids = (x.user_id for x in self.unique)
         return sorted(set(ids))
-
-    def get_all_with_earliest_join_time(self):
-        pass
 
     def add(self, log_entry):
         ca_user = CaUser(log_entry=log_entry)
@@ -230,7 +239,7 @@ class CaEvent:
     _end_time = None
     duration = None
 
-    _couch_raw_data = None
+    _couch_raw_db_data = None
     _couch_data = None  # Converted to dict
 
     # TODO: Proper error handling
@@ -250,7 +259,7 @@ class CaEvent:
 
     @event_id.setter
     def event_id(self, value):
-        """ Sets EventId for this class. """
+        """ Set EventId for this class. """
         value = int(value)
         if self._event_id is None:
             self._event_id = value
@@ -264,7 +273,7 @@ class CaEvent:
 
     @start_time.setter
     def start_time(self, value):
-        """ Sets EventId for this class. """
+        """ Set start_time for this class. """
         try:
             value = dateutil.parser.parse(value)
         except AttributeError as e:
@@ -314,14 +323,6 @@ class CaEvent:
     @property
     def event_users(self):
         return self._event_users.unique
-
-    # @property
-    # def event_users_id(self):
-    #     return self._event_users.unique_ids
-
-    # @property
-    # def users_id_list(self):
-    #     return [usr.user_id for usr in self._event_users]
 
     def append(self, log_entry):
         self.event_id = log_entry['eventId']
@@ -404,10 +405,10 @@ class CaEvent:
         users_id_list = self._event_users.unique_ids
         couch_data = self.get_couch_data(event_ids=self.event_id,
                                          user_ids=users_id_list)
-        self._couch_raw_data = tuple(couch_data)
+        self._couch_raw_db_data = tuple(couch_data)
         # For ease & convenience
         self.couch_data = {int(row.value.get('id', '-1')): row
-                           for row in self._couch_raw_data}
+                           for row in self._couch_raw_db_data}
 
     def set_missing(self):
         self.description = COUCH_DB_MISSING_DATA
@@ -426,8 +427,8 @@ class CaEvent:
             'event_id': self.event_id,
             'description': self.description,
             'calendar_id': self.calendar_id,
-            'start_time': self.start_time,
-            'end_time': self.end_time,
+            'start_time': self.start_time.strftime(strftime_format),
+            'end_time': self.end_time.strftime(strftime_format),
         }
         return self._str_representation_templ.format(**format_data)
 

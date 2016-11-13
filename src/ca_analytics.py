@@ -26,15 +26,7 @@ def evaluate_arguments():
                                                 date_to=Setts.DATE_TO.value)
 
     ca_event_list = get_ca_events(db_data=db_data)
-    # print('** aaa')
-    # for line in ca_event_list:
-    #     print(line)
-    # print(line.event_users)
-    # for x in line.event_users:
-    #     print(x._mongo_raw_data)
-    # pprint(line.user_list)
 
-    # print('** bbb')
     printer = OutputHandler(ca_events_list=ca_event_list)
     if Setts.OUT_DEST.value:
         printer.write_file(f_path=Setts.OUT_DEST.value)
@@ -43,11 +35,6 @@ def evaluate_arguments():
 
 
 def main(start_cmd=None):
-    # start_cmd = ['-e', '389', '523',
-    #              '-u', '116788992537476058951', '116964073935054089646', '100143115762434483634']
-    # start_cmd = ['-e', '389', '523']
-    # start_cmd = ['-e', '419']
-    # start_cmd = ['-u', '116788992537476058951', '116964073935054089646']
     args, parser = configure_argparse(rwd=rwd, start_cmd=start_cmd)
 
     # Load default cfg
