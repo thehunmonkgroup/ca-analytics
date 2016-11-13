@@ -429,6 +429,20 @@ class ResponseFactory:
         return ret
 
     @classmethod
+    def get_users_for_given_event_class(cls, event_list):
+        """
+        Retrun dict:
+            {Event_class: [User1, User2, ..], ...], Event_2: [], }
+        :param event_list: List of Sample event class
+        :return:
+        """
+        ret = {}
+        for event_class in event_list:
+            users = cls.get_all_users_attending_event(event_id=event_class.eventId)
+            ret[event_class] = users
+        return ret
+
+    @classmethod
     def get_all_mongo_logs(cls):
         ret = []
         for sample_user in cls.sample_users:
