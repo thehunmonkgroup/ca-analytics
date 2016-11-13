@@ -3,10 +3,11 @@
 #  Proxy for getting relevant info from databases
 import logging
 
+import couchdb
 import dateutil.parser
 from pymongo import MongoClient
 
-from lib.extras import Setts
+from lib.extras import Setts, is_string, is_iterable, get_couchdb_id
 
 log = logging.getLogger(__name__)
 
@@ -14,6 +15,7 @@ log = logging.getLogger(__name__)
 class MongoData:
     _filter_join_events = {'action': 'join', 'message': 'events'}
     _TIME_TEMPLATE = '%sT00:00:00.000Z'
+    db_mongo = None
 
     def __init__(self, connection_string, database_name):
         self._client = MongoClient(connection_string)
@@ -63,8 +65,8 @@ class MongoData:
                     if date_from < log_date < date_to:
                         ret_f.append(row)
                 except KeyError as e:
-                    log.error('Couldn\'t determine logs date "". '
-                              'err:\n %s', row, e)
+                    log.error("Couldn\'t determine logs date [%s] Error [%s]",
+                              row, e)
             return ret_f
 
         def handle_from(date_from):
@@ -76,8 +78,8 @@ class MongoData:
                     if date_from < log_date:
                         ret_f.append(row)
                 except KeyError as e:
-                    log.error('Couldn\'t determine logs date "". '
-                              'err:\n %s', row, e)
+                    log.error("Couldn\'t determine logs date [%s] Error [%s]",
+                              row, e)
             return ret_f
 
         def handle_to(date_to):
@@ -89,8 +91,8 @@ class MongoData:
                     if log_date < date_to:
                         ret_f.append(row)
                 except KeyError as e:
-                    log.error('Couldn\'t determine logs date "". '
-                              'err:\n %s', row, e)
+                    log.error("Couldn\'t determine logs date [%s] Error [%s]",
+                              row, e)
             return ret_f
 
         ret = data
@@ -119,8 +121,9 @@ class MongoData:
             question["eventId"] = self._search_in(event_ids)
         if user_ids is not None:
             question["userId"] = self._search_in(user_ids, cast=str)
+        # Else whole db is downloaded for 'action': 'join'
 
-        ret = self.db_mongo.analytics.find(question)
+        ret = list(self.db_mongo.analytics.find(question))
         return ret
 
     @property
@@ -146,8 +149,119 @@ class MongoData:
         return {'$in': ret}
 
 
+class CouchData:
+    QUERY_EVENT = '''
+        function(doc){
+            var patt = new RegExp('^event/[0-9]{5}$');
+            if(patt.test(doc._id) && doc.id == %s){
+                emit(doc.id, doc);
+            }
+        }
+        '''
+    QUERY_LIST = '''
+        function(doc){
+            var L = function() {
+                    var obj = {};
+                    for(var i=0; i<arguments.length; i++)
+                        obj[arguments[i]] = null;
+
+                    return obj; };
+
+            if(doc._id in L('%s')){
+                emit(doc.id, doc);
+            }
+        }
+        '''
+    db_couch = None
+
+    def __init__(self, connection_string, database_name):
+        self._client = couchdb.Server(connection_string)
+        self.db_couch = self._client[database_name]
+
+    def get_data(self, event_ids=None, user_ids=None):
+        """
+        Get data about specific events or users.
+
+        :version: 2016.11.11
+        :param user_ids:
+        :param user_ids: list of userIds
+        :type event_ids: list of eventIds
+        :return:
+        """
+
+        def make_iterable(evnt_ids=event_ids, usr_ids=user_ids):
+            # Correctness of ids is checked later
+
+            if is_string(val=evnt_ids) or not is_iterable(val=evnt_ids):
+                log.debug('Converting to iterable evnt_ids: %s', evnt_ids)
+                evnt_ids = [evnt_ids]
+
+            if is_string(val=usr_ids) or not is_iterable(val=usr_ids):
+                log.debug('Converting to iterable usr_ids: %s', usr_ids)
+                usr_ids = [usr_ids]
+            return evnt_ids, usr_ids
+
+        def get_search_values(evnt_ids, usr_ids):
+            """
+            Prepares search entries for CoachDB.
+             * converts elements of lists to string
+             * deduplicate ids for events and users
+             * fills till 5 chars on event_ids
+             * sorts them
+             * Returns
+
+            :param evnt_ids:
+            :param usr_ids:
+            :return:
+            """
+
+            def none_or_empty(val):
+                """
+                Event or user id can be 0.
+
+                :param val:
+                :return:
+                """
+                # TODO: I think it was changed and now we are passing always
+                #   string. So maybe no need for this.
+                #   Generally refactor and unify str/int ids/keys from db in
+                #   our models.
+                return val in ('None', '')
+
+            evnt_templ = 'event/%s'
+            usr_templ = 'user/%s'
+
+            ret = []
+            for evnt in sorted(set(map(str, evnt_ids))):
+                if none_or_empty(val=evnt):
+                    continue
+                ret.append(evnt_templ % get_couchdb_id(event_id=evnt))
+
+            for usr in sorted(set(map(str, usr_ids))):
+                if none_or_empty(val=usr):
+                    continue
+                ret.append(usr_templ % usr)
+
+            return ret
+
+        # TODO: logging!
+        # TODO: Import make_iterable from extras
+        event_ids, user_ids = make_iterable(evnt_ids=event_ids,
+                                            usr_ids=user_ids)
+
+        search_vals = get_search_values(evnt_ids=event_ids, usr_ids=user_ids)
+        search_query = self.QUERY_LIST % "', '".join(search_vals)
+
+        results = self.db_couch.query(search_query)
+        return results.rows
+
+
 def init_db():
     Setts._DB_MONGO.value = MongoData(
         connection_string=Setts.MONGO_STRING.value,
         database_name=Setts.MONGO_DATABASE.value
+    )
+    Setts._DB_COUCH.value = CouchData(
+        connection_string=Setts.COUCH_STRING.value,
+        database_name=Setts.COUCH_DATABASE.value
     )
