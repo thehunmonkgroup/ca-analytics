@@ -80,10 +80,11 @@ class TestMain(unittest.TestCase):
         self.check_if_events_valid(script_events_data=ca_events,
                                    expected_events_data=expected_events)
 
+        # TODO: Move to check_if_users_valid(ca_events, expected_events)
         for ca_event, expected_event in zip(ca_events, expected_events):
             self.check_if_users_valid(
                 script_events_users=ca_event.event_users,
-                expected_events_users=expected_users,
+                expected_events_users=expected_users[expected_event],
                 event_id=expected_event.eventId
             )
 
