@@ -4,6 +4,7 @@
 
 import argparse
 import collections
+import csv
 import errno
 import logging
 import os
@@ -45,6 +46,7 @@ class OutputHandler:
         Here is raw data. During printing/writing to file it's converted in
         `_prepare_output`.:
         """
+        # tutaj kacper
         self._ca_events_list = ca_events_list
         if not ca_events_list:
             print('Output created with settings: "%s"' % Setts.cfg)
@@ -80,6 +82,24 @@ class OutputHandler:
             print('* Writing to file: "%s"' % f_path)
             f.write('\n'.join(self.lines))
             print('* Done')
+
+    def _prepare_export(self, event):
+        out = {}
+        out["Event ID "] = event._event_id
+        out["Descripton"] = event.description
+        out["Calendar ID"] = event.calendar_id
+        out["Start time"] = event._start_time
+        users = []
+        for user in event.event_users:
+            tmp = {}
+            tmp["User ID"] = str(user.user_id)
+            tmp["User name"] = user.display_name
+            tmp["Joined"] = user._timestamp_str
+            users.append(tmp)
+        print(users)
+        out["Users"] = users
+
+        return out
 
 
 def norm_path(path, mkdir=True, mkfile=False, logger=None):
