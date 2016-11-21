@@ -46,7 +46,6 @@ class OutputHandler:
         Here is raw data. During printing/writing to file it's converted in
         `_prepare_output`.:
         """
-        # tutaj kacper
         self._ca_events_list = ca_events_list
         if not ca_events_list:
             print('Output created with settings: "%s"' % Setts.cfg)
@@ -85,21 +84,37 @@ class OutputHandler:
 
     def _prepare_export(self, event):
         out = {}
-        out["Event ID "] = event._event_id
-        out["Descripton"] = event.description
-        out["Calendar ID"] = event.calendar_id
-        out["Start time"] = event._start_time
+        out['Event ID '] = event._event_id
+        out['Descripton'] = event.description
+        out['Calendar ID'] = event.calendar_id
+        out['Start time'] = event._start_time
         users = []
         for user in event.event_users:
             tmp = {}
-            tmp["User ID"] = str(user.user_id)
-            tmp["User name"] = user.display_name
-            tmp["Joined"] = user._timestamp_str
+            tmp['User ID'] = str(user.user_id)
+            tmp['User name'] = user.display_name
+            tmp['Joined'] = user._timestamp_str
             users.append(tmp)
-        print(users)
-        out["Users"] = users
+
+        out['Users'] = users
 
         return out
+
+    def export_csv(self, f_path):
+        f_path = norm_path(f_path, mkfile=False, mkdir=False)
+        with open(f_path, 'w')as f:
+            print('* Exporting as: "%s"' % f_path)
+            fieldnames = ['Event ID ', 'Descripton', 'Calendar ID', 'Start time', 'User ID', 'User name', 'Joined']
+            writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
+            writer.writeheader()
+            for each_ca_event in self._ca_events_list:
+                event_dict = self._prepare_export(each_ca_event)
+                for user in event_dict['Users']:
+                    event_dict['User ID'] = user['User ID']
+                    event_dict['User name'] = user['User name']
+                    event_dict['Joined'] = user['Joined']
+                    writer.writerow(event_dict)
+            print('* Done')
 
 
 def norm_path(path, mkdir=True, mkfile=False, logger=None):
