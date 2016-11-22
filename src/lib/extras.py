@@ -6,6 +6,7 @@ import argparse
 import collections
 import csv
 import errno
+import json
 import logging
 import os
 from os.path import join as j
@@ -87,7 +88,7 @@ class OutputHandler:
         out['Event ID '] = event._event_id
         out['Descripton'] = event.description
         out['Calendar ID'] = event.calendar_id
-        out['Start time'] = event._start_time
+        out['Start time'] = str(event._start_time)
         users = []
         for user in event.event_users:
             tmp = {}
@@ -114,6 +115,17 @@ class OutputHandler:
                     event_dict['User name'] = user['User name']
                     event_dict['Joined'] = user['Joined']
                     writer.writerow(event_dict)
+            print('* Done')
+
+    def export_json(self, f_path):
+        print('* Exporting as: "%s"' % f_path)
+        f_path = norm_path(f_path, mkfile=False, mkdir=False)
+        with open(f_path, 'w')as f:
+            export_list = []
+            for each_ca_event in self._ca_events_list:
+                event_dict = self._prepare_export(each_ca_event)
+                export_list.append(event_dict)
+            json.dump(export_list, f, sort_keys=False)
             print('* Done')
 
 
