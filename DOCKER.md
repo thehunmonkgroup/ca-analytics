@@ -25,8 +25,13 @@ Copy your backup data of CouchDB to `./conf/db_data/circleanywhere.couch.gz`
 
 Build CouchDB image:
 ```
-$ docker build -t circle_anywhere/couch_db -f conf/docker/couch_db/Dockerfile
+$ docker build -t circle_anywhere/couch_db -f conf/docker/couch_db/Dockerfile .
 
+```
+
+Run it the first time
+```
+$ docker run -it -p 5984:5984 --name couchdb_app circle_anywhere/couch_db
 ```
 
 
@@ -73,7 +78,7 @@ $ docker start -ia 6b2464ba8b29
 ## Starting bash
 Starting bash:
 ```
-$ docker run -it --rm --name analyticsapp circle_anywhere/ca_host bash
+$ docker run -it --rm --name ca_analytics circle_anywhere/ca_host bash
 ```
 
 
