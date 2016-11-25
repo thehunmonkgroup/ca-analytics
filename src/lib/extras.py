@@ -85,14 +85,15 @@ class OutputHandler:
 
     def _prepare_export(self, event):
         out = {}
-        out['Event ID '] = event._event_id
-        out['Descripton'] = event.description
+        out['Event ID'] = event.event_id
+        out['Description'] = event.description
         out['Calendar ID'] = event.calendar_id
-        out['Start time'] = str(event._start_time)
+        out['Start time'] = str(event.start_time)
+        out['End time'] = str(event.end_time)
         users = []
         for user in event.event_users:
             tmp = {}
-            tmp['User ID'] = str(user.user_id)
+            tmp['User ID'] = user.user_id
             tmp['User name'] = user.display_name
             tmp['Joined'] = user._timestamp_str
             users.append(tmp)
@@ -103,9 +104,9 @@ class OutputHandler:
 
     def export_csv(self, f_path):
         f_path = norm_path(f_path, mkfile=False, mkdir=False)
-        with open(f_path, 'w')as f:
+        with open(f_path, 'w') as f:
             print('* Exporting as: "%s"' % f_path)
-            fieldnames = ['Event ID ', 'Descripton', 'Calendar ID', 'Start time', 'User ID', 'User name', 'Joined']
+            fieldnames = ['Event ID', 'Description', 'Calendar ID', 'Start time', 'End time', 'User ID', 'User name', 'Joined']
             writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
             writer.writeheader()
             for each_ca_event in self._ca_events_list:
@@ -120,7 +121,7 @@ class OutputHandler:
     def export_json(self, f_path):
         print('* Exporting as: "%s"' % f_path)
         f_path = norm_path(f_path, mkfile=False, mkdir=False)
-        with open(f_path, 'w')as f:
+        with open(f_path, 'w') as f:
             export_list = []
             for each_ca_event in self._ca_events_list:
                 event_dict = self._prepare_export(each_ca_event)
