@@ -88,8 +88,8 @@ class OutputHandler:
             print('* Writing to file: "%s"' % f_path)
             f.write('\n'.join(self.lines))
             print('* Done')
-
-    def _prepare_export(self, event):
+    @classmethod
+    def prepare_export(cls, event):
         out = {}
         out['Event ID'] = event.event_id
         out['Description'] = event.description
@@ -118,7 +118,7 @@ class OutputHandler:
                                         quoting=csv.QUOTE_NONNUMERIC)
                 writer.writeheader()
                 for each_ca_event in self._ca_events_list:
-                    event_dict = self._prepare_export(each_ca_event)
+                    event_dict = self.prepare_export(each_ca_event)
                     writer.writerow(event_dict)
 
             elif Setts.EVENT.value:
@@ -126,7 +126,7 @@ class OutputHandler:
                                         quoting=csv.QUOTE_NONNUMERIC)
                 writer.writeheader()
                 for each_ca_event in self._ca_events_list:
-                    event_dict = self._prepare_export(each_ca_event)
+                    event_dict = self.prepare_export(each_ca_event)
                     writer.writerows(event_dict['Users'])
 
             else:
@@ -134,7 +134,7 @@ class OutputHandler:
                                         quoting=csv.QUOTE_NONNUMERIC)
                 writer.writeheader()
                 for each_ca_event in self._ca_events_list:
-                    event_dict = self._prepare_export(each_ca_event)
+                    event_dict = self.prepare_export(each_ca_event)
                     for user in event_dict['Users']:
                         event_dict['User ID'] = user['User ID']
                         event_dict['User name'] = user['User name']
@@ -148,7 +148,7 @@ class OutputHandler:
         with open(f_path, 'w') as f:
             export_list = []
             for each_ca_event in self._ca_events_list:
-                event_dict = self._prepare_export(each_ca_event)
+                event_dict = self.prepare_export(each_ca_event)
                 export_list.append(event_dict)
             json.dump(export_list, f, sort_keys=False)
             print('* Done')
