@@ -7,12 +7,11 @@ import os
 import sys
 from os.path import join as j
 
-import ruamel.yaml as yaml
-
+from lib.ca_engine import get_ca_events
 from lib.db_engine import init_db
-from lib.extras import configure_argparse, Setts, CaPrinter
+from lib.extras import configure_argparse, Setts, OutputHandler
 
-rwd = os.path.dirname(os.path.abspath(__file__))
+rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
 if rwd not in sys.path:
     sys.path.append(rwd)
 
@@ -25,15 +24,17 @@ def evaluate_arguments():
     db_data = Setts._DB_MONGO.value.filter_date(data=db_data,
                                                 date_from=Setts.DATE_FROM.value,
                                                 date_to=Setts.DATE_TO.value)
-    printer = CaPrinter(data=db_data)
+
+    ca_event_list = get_ca_events(db_data=db_data)
+
+    printer = OutputHandler(ca_events_list=ca_event_list)
     if Setts.OUT_DEST.value:
         printer.write_file(f_path=Setts.OUT_DEST.value)
     else:
         printer.write_terminal()
 
 
-def main():
-    start_cmd = None
+def main(start_cmd=None):
     args, parser = configure_argparse(rwd=rwd, start_cmd=start_cmd)
 
     # Load default cfg
@@ -46,11 +47,13 @@ def main():
     evaluate_arguments()
 
 
-version = {'y': 2016, 'm': 8, 'd': 20}
+version = {'y': 2016, 'm': 11, 'd': 12}
 __version__ = '{y}.{m}.{d}'.format(**version)
 
 if __name__ == '__main__':
     try:
+        # TODO: Add logging
+        # TODO: docker CoachDB & MongoDB
         main()
     except Exception as e:
         log.exception(e)
