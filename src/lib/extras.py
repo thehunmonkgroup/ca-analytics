@@ -114,21 +114,24 @@ class OutputHandler:
         with open(f_path, 'w') as f:
             print('* Exporting as: "%s"' % f_path)
             if Setts.USER.value:
-                writer = csv.DictWriter(f, fieldnames=self._csv_user_export_fieldnames, extrasaction='ignore')
+                writer = csv.DictWriter(f, fieldnames=self._csv_user_export_fieldnames, extrasaction='ignore',
+                                        quoting=csv.QUOTE_NONNUMERIC)
                 writer.writeheader()
                 for each_ca_event in self._ca_events_list:
                     event_dict = self._prepare_export(each_ca_event)
                     writer.writerow(event_dict)
 
             elif Setts.EVENT.value:
-                writer = csv.DictWriter(f, fieldnames=self._csv_event_export_fieldnames, extrasaction='ignore')
+                writer = csv.DictWriter(f, fieldnames=self._csv_event_export_fieldnames, extrasaction='ignore',
+                                        quoting=csv.QUOTE_NONNUMERIC)
                 writer.writeheader()
                 for each_ca_event in self._ca_events_list:
                     event_dict = self._prepare_export(each_ca_event)
                     writer.writerows(event_dict['Users'])
 
             else:
-                writer = csv.DictWriter(f, fieldnames=self._csv_export_all_fieldnames, extrasaction='ignore')
+                writer = csv.DictWriter(f, fieldnames=self._csv_export_all_fieldnames, extrasaction='ignore',
+                                        quoting=csv.QUOTE_NONNUMERIC)
                 writer.writeheader()
                 for each_ca_event in self._ca_events_list:
                     event_dict = self._prepare_export(each_ca_event)
