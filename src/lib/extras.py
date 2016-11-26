@@ -81,7 +81,7 @@ class OutputHandler:
             out.append('')
         return out
 
-    def export_csv(self, f_path):
+    def write_csv(self, f_path):
         f_path = norm_path(f_path, mkfile=False, mkdir=False)
 
         with open(f_path, 'w') as f:
@@ -115,7 +115,7 @@ class OutputHandler:
                         writer.writerow(event_dict)
             print('* Done')
 
-    def export_json(self, f_path):
+    def write_json(self, f_path):
         print('* Exporting as: "%s"' % f_path)
         f_path = norm_path(f_path, mkfile=False, mkdir=False)
         with open(f_path, 'w') as f:
@@ -130,13 +130,9 @@ class OutputHandler:
     def convert_to_dictionary(cls, event):
         out = {'Event ID': event.event_id, 'Description': event.description, 'Calendar ID': event.calendar_id,
                'Start time': event.start_time_str, 'End time': event.end_time_str}
-        users = []
-        for user in event.event_users:
-            tmp = {'User ID': user.user_id, 'User name': user.display_name, 'Joined': user.timestamp_str}
-            users.append(tmp)
-
+        users = [{'User ID': user.user_id, 'User name': user.display_name, 'Joined': user.timestamp_str}
+                 for user in event.event_users]
         out['Users'] = users
-
         return out
 
 
