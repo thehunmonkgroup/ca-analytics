@@ -60,36 +60,26 @@ class OutputHandler:
             print('Output created with settings: "%s"' % Setts.cfg)
             self._lines = ['No data to print.']
 
-    @property
-    def lines(self):
-        """ List of lines to be written to output. """
-        if self._lines is None:
-            # print('Output created with settings: "%s"' % Setts.cfg)
-            self._lines = self._prepare_output()
-        return self._lines
-
-    def _prepare_output(self):
-        out = []
-
-        for each_ca_event in self._ca_events_list:
-            out.append(str(each_ca_event))
-            user_list = [self._user_print_templ % str(usr) for usr
-                         in each_ca_event.event_users]
-            out.extend(user_list)
-            out.append('')
-
-        return out
-
     def write_terminal(self):
-        for line in self.lines:
+        for line in self.convert_to_string_output():
             print(line)
 
     def write_file(self, f_path):
         f_path = norm_path(f_path, mkfile=False, mkdir=False)
         with open(f_path, 'w') as f:
             print('* Writing to file: "%s"' % f_path)
-            f.write('\n'.join(self.lines))
+            f.write('\n'.join(self.convert_to_string_output()))
             print('* Done')
+
+    def convert_to_string_output(self):
+        out = []
+        for each_ca_event in self._ca_events_list:
+            out.append(str(each_ca_event))
+            user_list = [self._user_print_templ % str(usr) for usr
+                         in each_ca_event.event_users]
+            out.extend(user_list)
+            out.append('')
+        return out
 
     def export_csv(self, f_path):
         f_path = norm_path(f_path, mkfile=False, mkdir=False)
@@ -101,7 +91,7 @@ class OutputHandler:
                                         quoting=csv.QUOTE_NONNUMERIC)
                 writer.writeheader()
                 for each_ca_event in self._ca_events_list:
-                    event_dict = self.prepare_export(each_ca_event)
+                    event_dict = self.convert_to_dictionary(each_ca_event)
                     writer.writerow(event_dict)
 
             elif Setts.EVENT.value:
@@ -109,7 +99,7 @@ class OutputHandler:
                                         quoting=csv.QUOTE_NONNUMERIC)
                 writer.writeheader()
                 for each_ca_event in self._ca_events_list:
-                    event_dict = self.prepare_export(each_ca_event)
+                    event_dict = self.convert_to_dictionary(each_ca_event)
                     writer.writerows(event_dict['Users'])
 
             else:
@@ -117,7 +107,7 @@ class OutputHandler:
                                         quoting=csv.QUOTE_NONNUMERIC)
                 writer.writeheader()
                 for each_ca_event in self._ca_events_list:
-                    event_dict = self.prepare_export(each_ca_event)
+                    event_dict = self.convert_to_dictionary(each_ca_event)
                     for user in event_dict['Users']:
                         event_dict['User ID'] = user['User ID']
                         event_dict['User name'] = user['User name']
@@ -131,13 +121,13 @@ class OutputHandler:
         with open(f_path, 'w') as f:
             export_list = []
             for each_ca_event in self._ca_events_list:
-                event_dict = self.prepare_export(each_ca_event)
+                event_dict = self.convert_to_dictionary(each_ca_event)
                 export_list.append(event_dict)
             json.dump(export_list, f, sort_keys=False)
             print('* Done')
 
     @classmethod
-    def prepare_export(cls, event):
+    def convert_to_dictionary(cls, event):
         out = {'Event ID': event.event_id, 'Description': event.description, 'Calendar ID': event.calendar_id,
                'Start time': event.start_time_str, 'End time': event.end_time_str}
         users = []
