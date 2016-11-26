@@ -101,7 +101,7 @@ class OutputHandler:
             tmp = {}
             tmp['User ID'] = user.user_id
             tmp['User name'] = user.display_name
-            tmp['Joined'] = user._timestamp_str
+            tmp['Joined'] = str(user.timestamp)
             users.append(tmp)
 
         out['Users'] = users
