@@ -46,9 +46,9 @@ class OutputHandler:
     _csv_user_export_fieldnames = ('Event ID', 'Description', 'Calendar ID', 'Start time', 'End time')
     _csv_event_export_fieldnames = ('User ID', 'User name', 'Joined')
     _csv_export_all_fieldnames = ('Event ID', 'Description',
-                               'Calendar ID', 'Start time',
-                               'End time', 'User ID',
-                               'User name', 'Joined')
+                                  'Calendar ID', 'Start time',
+                                  'End time', 'User ID',
+                                  'User name', 'Joined')
 
     def __init__(self, ca_events_list):
         """
@@ -90,25 +90,6 @@ class OutputHandler:
             print('* Writing to file: "%s"' % f_path)
             f.write('\n'.join(self.lines))
             print('* Done')
-    @classmethod
-    def prepare_export(cls, event):
-        out = {}
-        out['Event ID'] = event.event_id
-        out['Description'] = event.description
-        out['Calendar ID'] = event.calendar_id
-        out['Start time'] = str(event.start_time)
-        out['End time'] = str(event.end_time)
-        users = []
-        for user in event.event_users:
-            tmp = {}
-            tmp['User ID'] = user.user_id
-            tmp['User name'] = user.display_name
-            tmp['Joined'] = str(user.timestamp)
-            users.append(tmp)
-
-        out['Users'] = users
-
-        return out
 
     def export_csv(self, f_path):
         f_path = norm_path(f_path, mkfile=False, mkdir=False)
@@ -154,6 +135,19 @@ class OutputHandler:
                 export_list.append(event_dict)
             json.dump(export_list, f, sort_keys=False)
             print('* Done')
+
+    @classmethod
+    def prepare_export(cls, event):
+        out = {'Event ID': event.event_id, 'Description': event.description, 'Calendar ID': event.calendar_id,
+               'Start time': event.start_time_str, 'End time': event.end_time_str}
+        users = []
+        for user in event.event_users:
+            tmp = {'User ID': user.user_id, 'User name': user.display_name, 'Joined': user.timestamp_str}
+            users.append(tmp)
+
+        out['Users'] = users
+
+        return out
 
 
 def norm_path(path, mkdir=True, mkfile=False, logger=None):

@@ -89,6 +89,10 @@ class CaUser:
     def timestamp(self):
         return self._timestamp
 
+    @property
+    def timestamp_str(self):
+        return self._timestamp.strftime(strftime_format)
+
     @timestamp.setter
     def timestamp(self, value):
         """ '2016-07-02T20:35:40.896Z' """
@@ -271,6 +275,10 @@ class CaEvent:
     def start_time(self):
         return self._start_time
 
+    @property
+    def start_time_str(self):
+        return self._start_time.strftime(strftime_format)
+
     @start_time.setter
     def start_time(self, value):
         """ Set start_time for this class. """
@@ -319,6 +327,10 @@ class CaEvent:
                       'Start time: %s. Error: %s',
                       self.event_id, self.start_time, e)
         return self._end_time
+
+    @property
+    def end_time_str(self):
+        return self.end_time.strftime(strftime_format)
 
     @property
     def event_users(self):
