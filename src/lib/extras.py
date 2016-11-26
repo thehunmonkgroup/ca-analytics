@@ -5,6 +5,7 @@
 import argparse
 import collections
 import csv
+import datetime as dt
 import errno
 import json
 import logging
@@ -16,6 +17,7 @@ import ruamel.yaml as yaml
 log = logging.getLogger(__name__)
 
 COUCH_DB_MISSING_DATA = 'Missing CouchDB data'
+COUCH_DB_MISSING_TIME = dt.datetime(1988, 7, 28, 4, 0, 0)
 
 is_string = lambda val: isinstance(val, str)
 is_iterable = lambda val: isinstance(val, collections.Iterable)

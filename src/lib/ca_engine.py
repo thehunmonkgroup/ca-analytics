@@ -7,7 +7,7 @@ import logging
 import dateutil.parser
 import dateutil.relativedelta
 
-from lib.extras import Setts, COUCH_DB_MISSING_DATA, strftime_format
+from lib.extras import Setts, COUCH_DB_MISSING_DATA, COUCH_DB_MISSING_TIME, strftime_format
 
 log = logging.getLogger(__name__)
 
@@ -279,8 +279,8 @@ class CaEvent:
         except AttributeError as e:
             # TODO: add stack
             log.debug(e)
-            self._start_time = COUCH_DB_MISSING_DATA
-            self._end_time = COUCH_DB_MISSING_DATA
+            self._start_time = COUCH_DB_MISSING_TIME
+            self._end_time = COUCH_DB_MISSING_TIME
             return
         if self._start_time is None:
             self._start_time = value
@@ -413,9 +413,9 @@ class CaEvent:
     def set_missing(self):
         self.description = COUCH_DB_MISSING_DATA
         self.calendar_id = COUCH_DB_MISSING_DATA
-        self._start_time = COUCH_DB_MISSING_DATA
-        self._end_time = COUCH_DB_MISSING_DATA
-        self.duration = COUCH_DB_MISSING_DATA
+        self._start_time = COUCH_DB_MISSING_TIME
+        self._end_time = COUCH_DB_MISSING_TIME
+        self.duration = COUCH_DB_MISSING_TIME
 
     @staticmethod
     def get_couch_data(event_ids=None, user_ids=None):
