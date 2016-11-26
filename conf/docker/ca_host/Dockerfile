@@ -3,7 +3,7 @@ FROM centos:6.8
 MAINTAINER Alek  <aleks.cc@gmail.com>
 
 # Install pyenv: https://github.com/yyuu/pyenv-installer
-RUN yum update -y && yum install -y \
+RUN yum install -y \
     zlib-devel \
     bzip2 \
     bzip2-devel \
