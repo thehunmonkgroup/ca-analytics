@@ -1,12 +1,41 @@
-# Smarbuy with docker - manual tests (not production!!)
+# Setup of Circe Anywhere analytical script environment
 
-## Prerequisites
+Running this script will require you to have working CouchDB and MongoDB.
+Below are instructions on how to build one with docker.
 
-### Docker installation
-Install docker according to your platform: https://docs.docker.com/engine/getstarted/step_one/
+You will only need to copy database/log backups to designated directory, build 
+docker image and run it.
 
-## Creating and running production image
+Firstly there are instructions on how to build **MongoDB** & **CouchDB** databases.
+Then how to build the **test environment** to check scripts workings on 
+_CentOS 6.8_ host.
 
+At the end is Docker reference documentation on how to install it.
+
+**All docker command should be issued form projects root**
+```
+$ cd ~/path_to/repo/ca-analytics
+```
+
+## Creating and running MongoDB image
+asd
+
+## Creating and running CouchDB image
+Copy your backup data of CouchDB to `./conf/db_data/circleanywhere.couch.gz`
+
+Build CouchDB image:
+```
+$ docker build -t circle_anywhere/couch_db -f conf/docker/couch_db/Dockerfile .
+
+```
+
+Run it the first time
+```
+$ docker run -it -p 5984:5984 --name couchdb_app circle_anywhere/couch_db
+```
+
+
+## Creating and running test image
 First execution can take a few minutes:
 ```
 $ docker build -t circle_anywhere/ca_host -f conf/docker/ca_host/Dockerfile .
@@ -49,7 +78,7 @@ $ docker start -ia 6b2464ba8b29
 ## Starting bash
 Starting bash:
 ```
-$ docker run -it --rm --name analyticsapp circle_anywhere/ca_host bash
+$ docker run -it --rm --name ca_analytics circle_anywhere/ca_host bash
 ```
 
 
@@ -60,3 +89,6 @@ $ docker ps
 
 $ docker exec -it 25c84674a98e bash
 ```
+
+## Docker installation
+Install docker according to your platform: https://docs.docker.com/engine/getstarted/step_one/

@@ -4,6 +4,7 @@
 
 import argparse
 import collections
+import datetime as dt
 import errno
 import logging
 import os
@@ -13,52 +14,62 @@ import ruamel.yaml as yaml
 
 log = logging.getLogger(__name__)
 
+COUCH_DB_MISSING_DATA = 'Missing CouchDB data'
+COUCH_DB_MISSING_TIME = dt.datetime(1988, 7, 28, 4, 0, 0)
 
-class CaPrinter:
-    _data = None
+is_string = lambda val: isinstance(val, str)
+is_iterable = lambda val: isinstance(val, collections.Iterable)
+strftime_format = '%Y-%m-%d %H:%M:%S'
+
+
+def make_iterable(evnt_ids='None', usr_ids='None'):
+    # Correctness of ids is checked later
+    if is_string(val=evnt_ids) or not is_iterable(val=evnt_ids):
+        log.debug('Converting to iterable evnt_ids: %s', evnt_ids)
+        evnt_ids = [evnt_ids]
+    if is_string(val=usr_ids) or not is_iterable(val=usr_ids):
+        log.debug('Converting to iterable usr_ids: %s', usr_ids)
+        usr_ids = [usr_ids]
+    return evnt_ids, usr_ids
+
+
+def get_couchdb_id(event_id):
+    return str(event_id).rjust(5, '0')
+
+
+class OutputHandler:
+    _ca_events_list = None
     _lines = None
-    _sep = '-' * 25
+    _user_print_templ = '  %s'
 
-    def __init__(self, data):
+    def __init__(self, ca_events_list):
         """
         Here is raw data. During printing/writing to file it's converted in
         `_prepare_output`.:
-
-        :param data: json list/db_cursor
-            {'eventId': 286, 'message': 'events', 'connectedUsers': 0, 'timestamp': '2016-03-19T03:27:14.150Z', 'userId': '112349864121259291250', 'level': 'info', '_id': ObjectId('57a3a39600c88030ca3faf88'), 'action': 'join'}
-            {'eventId': 286, 'message': 'events', 'connectedUsers': 1, 'timestamp': '2016-03-19T03:27:27.177Z', 'userId': '116488113102013485647', 'level': 'info', '_id': ObjectId('57a3a39600c88030ca3faf98'), 'action': 'join'}
-            {'eventId': 266, 'message': 'events', 'connectedUsers': 0, 'timestamp': '2016-03-19T04:38:34.221Z', 'userId': '114498861474704307604', 'level': 'info', '_id': ObjectId('57a3a39600c88030ca3fb10e'), 'action': 'join'}
-            {'eventId': 292, 'message': 'events', 'connectedUsers': 1, 'timestamp': '2016-03-19T08:59:37.600Z', 'userId': '108611793445678484173', 'level': 'info', '_id': ObjectId('57a3a39600c88030ca3fb3cc'), 'action'
         """
-        self._data = data
-        if not data:
+        self._ca_events_list = ca_events_list
+        if not ca_events_list:
             print('Output created with settings: "%s"' % Setts.cfg)
             self._lines = ['No data to print.']
 
     @property
     def lines(self):
-        """
-        List of lines to ber written to output.
-        """
+        """ List of lines to be written to output. """
         if self._lines is None:
-            print('Output created with settings: "%s"' % Setts.cfg)
+            # print('Output created with settings: "%s"' % Setts.cfg)
             self._lines = self._prepare_output()
         return self._lines
 
     def _prepare_output(self):
         out = []
-        tmp = collections.defaultdict(dict)
 
-        for line in self._data:
-            tmp[line['eventId']][line['userId']] = line['timestamp']
+        for each_ca_event in self._ca_events_list:
+            out.append(str(each_ca_event))
+            user_list = [self._user_print_templ % str(usr) for usr
+                         in each_ca_event.event_users]
+            out.extend(user_list)
+            out.append('')
 
-        for event_id, users in sorted(tmp.items()):
-            out.append(self._sep)
-            out.append("Event ID: %s" % event_id)
-            for user_id, timestamp in sorted(users.items(),
-                                             key=lambda x: x[1]):
-                out.append("    %s: %s" % (user_id, timestamp))
-            out.append(self._sep)
         return out
 
     def write_terminal(self):
@@ -349,12 +360,12 @@ class Setts:
             self.value = value
 
         def __repr__(self):
-            return 'Option(key=%s, ' \
-                   'value=%s, ' \
-                   'default=%s, ' \
-                   'desc="%s", ' \
-                   'callback=%s)' % (self.key, self.value, self.default,
-                                     self.desc, self.callback)
+            return ('Option(key=%s, '
+                    'value=%s, '
+                    'default=%s, '
+                    'desc="%s", '
+                    'callback=%s)' % (self.key, self.value, self.default,
+                                      self.desc, self.callback))
 
         def __str__(self):
             return '"%s": "%s"' % (self.key, self.value)
