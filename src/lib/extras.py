@@ -5,6 +5,7 @@
 import argparse
 import collections
 import csv
+import datetime as dt
 import errno
 import json
 import logging
@@ -16,6 +17,7 @@ import ruamel.yaml as yaml
 log = logging.getLogger(__name__)
 
 COUCH_DB_MISSING_DATA = 'Missing CouchDB data'
+COUCH_DB_MISSING_TIME = dt.datetime(1988, 7, 28, 4, 0, 0)
 
 is_string = lambda val: isinstance(val, str)
 is_iterable = lambda val: isinstance(val, collections.Iterable)
@@ -41,6 +43,12 @@ class OutputHandler:
     _ca_events_list = None
     _lines = None
     _user_print_templ = '  %s'
+    _csv_user_export_fieldnames = ('Event ID', 'Description', 'Calendar ID', 'Start time', 'End time')
+    _csv_event_export_fieldnames = ('User ID', 'User name', 'Joined')
+    _csv_export_all_fieldnames = ('Event ID', 'Description',
+                                  'Calendar ID', 'Start time',
+                                  'End time', 'User ID',
+                                  'User name', 'Joined')
 
     def __init__(self, ca_events_list):
         """
@@ -52,81 +60,79 @@ class OutputHandler:
             print('Output created with settings: "%s"' % Setts.cfg)
             self._lines = ['No data to print.']
 
-    @property
-    def lines(self):
-        """ List of lines to be written to output. """
-        if self._lines is None:
-            # print('Output created with settings: "%s"' % Setts.cfg)
-            self._lines = self._prepare_output()
-        return self._lines
-
-    def _prepare_output(self):
-        out = []
-
-        for each_ca_event in self._ca_events_list:
-            out.append(str(each_ca_event))
-            user_list = [self._user_print_templ % str(usr) for usr
-                         in each_ca_event.event_users]
-            out.extend(user_list)
-            out.append('')
-
-        return out
-
     def write_terminal(self):
-        for line in self.lines:
+        for line in self.convert_to_string_output():
             print(line)
 
     def write_file(self, f_path):
         f_path = norm_path(f_path, mkfile=False, mkdir=False)
         with open(f_path, 'w') as f:
             print('* Writing to file: "%s"' % f_path)
-            f.write('\n'.join(self.lines))
+            f.write('\n'.join(self.convert_to_string_output()))
             print('* Done')
 
-    def _prepare_export(self, event):
-        out = {}
-        out['Event ID '] = event._event_id
-        out['Descripton'] = event.description
-        out['Calendar ID'] = event.calendar_id
-        out['Start time'] = str(event._start_time)
-        users = []
-        for user in event.event_users:
-            tmp = {}
-            tmp['User ID'] = str(user.user_id)
-            tmp['User name'] = user.display_name
-            tmp['Joined'] = user._timestamp_str
-            users.append(tmp)
-
-        out['Users'] = users
-
+    def convert_to_string_output(self):
+        out = []
+        for each_ca_event in self._ca_events_list:
+            out.append(str(each_ca_event))
+            user_list = [self._user_print_templ % str(usr) for usr
+                         in each_ca_event.event_users]
+            out.extend(user_list)
+            out.append('')
         return out
 
-    def export_csv(self, f_path):
+    def write_csv(self, f_path):
         f_path = norm_path(f_path, mkfile=False, mkdir=False)
-        with open(f_path, 'w')as f:
-            print('* Exporting as: "%s"' % f_path)
-            fieldnames = ['Event ID ', 'Descripton', 'Calendar ID', 'Start time', 'User ID', 'User name', 'Joined']
-            writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
+
+        def create_writer(f, fieldnames):
+            writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore', quoting=csv.QUOTE_NONNUMERIC)
             writer.writeheader()
-            for each_ca_event in self._ca_events_list:
-                event_dict = self._prepare_export(each_ca_event)
-                for user in event_dict['Users']:
-                    event_dict['User ID'] = user['User ID']
-                    event_dict['User name'] = user['User name']
-                    event_dict['Joined'] = user['Joined']
+            return writer
+
+        with open(f_path, 'w') as f:
+            print('* Exporting as: "%s"' % f_path)
+            if Setts.USER.value:
+                writer = create_writer(f, self._csv_user_export_fieldnames)
+                for each_ca_event in self._ca_events_list:
+                    event_dict = self.convert_to_dictionary(each_ca_event)
                     writer.writerow(event_dict)
+
+            elif Setts.EVENT.value:
+                writer = create_writer(f, self._csv_event_export_fieldnames)
+                for each_ca_event in self._ca_events_list:
+                    event_dict = self.convert_to_dictionary(each_ca_event)
+                    writer.writerows(event_dict['Users'])
+
+            else:
+                writer = create_writer(f, self._csv_export_all_fieldnames)
+                for each_ca_event in self._ca_events_list:
+                    event_dict = self.convert_to_dictionary(each_ca_event)
+                    for user in event_dict['Users']:
+                        event_dict['User ID'] = user['User ID']
+                        event_dict['User name'] = user['User name']
+                        event_dict['Joined'] = user['Joined']
+                        writer.writerow(event_dict)
             print('* Done')
 
-    def export_json(self, f_path):
+    def write_json(self, f_path):
         print('* Exporting as: "%s"' % f_path)
         f_path = norm_path(f_path, mkfile=False, mkdir=False)
-        with open(f_path, 'w')as f:
+        with open(f_path, 'w') as f:
             export_list = []
             for each_ca_event in self._ca_events_list:
-                event_dict = self._prepare_export(each_ca_event)
+                event_dict = self.convert_to_dictionary(each_ca_event)
                 export_list.append(event_dict)
             json.dump(export_list, f, sort_keys=False)
             print('* Done')
+
+    @classmethod
+    def convert_to_dictionary(cls, event):
+        out = {'Event ID': event.event_id, 'Description': event.description, 'Calendar ID': event.calendar_id,
+               'Start time': event.start_time_str, 'End time': event.end_time_str}
+        users = [{'User ID': user.user_id, 'User name': user.display_name, 'Joined': user.timestamp_str}
+                 for user in event.event_users]
+        out['Users'] = users
+        return out
 
 
 def norm_path(path, mkdir=True, mkfile=False, logger=None):

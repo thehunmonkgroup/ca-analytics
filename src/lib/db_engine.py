@@ -6,6 +6,7 @@ import logging
 import couchdb
 import dateutil.parser
 from pymongo import MongoClient
+from pymongo.errors import ServerSelectionTimeoutError
 
 from lib.extras import Setts, is_string, is_iterable, get_couchdb_id
 
@@ -17,7 +18,21 @@ class MongoData:
     _TIME_TEMPLATE = '%sT00:00:00.000Z'
     db_mongo = None
 
-    def __init__(self, connection_string, database_name):
+    def __init__(self, connection_string, database_name,
+                 check_db_connection_timeout=5):
+        def check_database_connection():
+            try:
+                client = MongoClient(
+                    connection_string,
+                    serverSelectionTimeoutMS=check_db_connection_timeout
+                )
+                client.server_info()
+            except ServerSelectionTimeoutError:
+                log.error("Couldn't connect to MongoDB [%s]. Exiting.",
+                          connection_string)
+                exit(1)
+
+        check_database_connection()
         self._client = MongoClient(connection_string)
         self.db_mongo = self._client[database_name]
 
@@ -65,7 +80,7 @@ class MongoData:
                     if date_from < log_date < date_to:
                         ret_f.append(row)
                 except KeyError as e:
-                    log.error("Couldn\'t determine logs date [%s] Error [%s]",
+                    log.error("Couldn't determine logs date [%s] Error [%s]",
                               row, e)
             return ret_f
 
@@ -78,7 +93,7 @@ class MongoData:
                     if date_from < log_date:
                         ret_f.append(row)
                 except KeyError as e:
-                    log.error("Couldn\'t determine logs date [%s] Error [%s]",
+                    log.error("Couldn't determine logs date [%s] Error [%s]",
                               row, e)
             return ret_f
 
@@ -176,7 +191,13 @@ class CouchData:
 
     def __init__(self, connection_string, database_name):
         self._client = couchdb.Server(connection_string)
-        self.db_couch = self._client[database_name]
+        try:
+            self.db_couch = self._client[database_name]
+        except ConnectionRefusedError:
+            log.error("Couldn't connect to CouchDB %s. Exiting.",
+                      {'connection_string': connection_string,
+                       'database_name': database_name})
+            exit(1)
 
     def get_data(self, event_ids=None, user_ids=None):
         """

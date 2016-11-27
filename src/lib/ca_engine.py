@@ -7,7 +7,7 @@ import logging
 import dateutil.parser
 import dateutil.relativedelta
 
-from lib.extras import Setts, COUCH_DB_MISSING_DATA, strftime_format
+from lib.extras import Setts, COUCH_DB_MISSING_DATA, COUCH_DB_MISSING_TIME, strftime_format
 
 log = logging.getLogger(__name__)
 
@@ -88,6 +88,10 @@ class CaUser:
     @property
     def timestamp(self):
         return self._timestamp
+
+    @property
+    def timestamp_str(self):
+        return self._timestamp.strftime(strftime_format)
 
     @timestamp.setter
     def timestamp(self, value):
@@ -271,6 +275,10 @@ class CaEvent:
     def start_time(self):
         return self._start_time
 
+    @property
+    def start_time_str(self):
+        return self._start_time.strftime(strftime_format)
+
     @start_time.setter
     def start_time(self, value):
         """ Set start_time for this class. """
@@ -279,8 +287,8 @@ class CaEvent:
         except AttributeError as e:
             # TODO: add stack
             log.debug(e)
-            self._start_time = COUCH_DB_MISSING_DATA
-            self._end_time = COUCH_DB_MISSING_DATA
+            self._start_time = COUCH_DB_MISSING_TIME
+            self._end_time = COUCH_DB_MISSING_TIME
             return
         if self._start_time is None:
             self._start_time = value
@@ -319,6 +327,10 @@ class CaEvent:
                       'Start time: %s. Error: %s',
                       self.event_id, self.start_time, e)
         return self._end_time
+
+    @property
+    def end_time_str(self):
+        return self.end_time.strftime(strftime_format)
 
     @property
     def event_users(self):
@@ -413,9 +425,9 @@ class CaEvent:
     def set_missing(self):
         self.description = COUCH_DB_MISSING_DATA
         self.calendar_id = COUCH_DB_MISSING_DATA
-        self._start_time = COUCH_DB_MISSING_DATA
-        self._end_time = COUCH_DB_MISSING_DATA
-        self.duration = COUCH_DB_MISSING_DATA
+        self._start_time = COUCH_DB_MISSING_TIME
+        self._end_time = COUCH_DB_MISSING_TIME
+        self.duration = COUCH_DB_MISSING_TIME
 
     @staticmethod
     def get_couch_data(event_ids=None, user_ids=None):

@@ -29,9 +29,9 @@ def evaluate_arguments():
     printer = OutputHandler(ca_events_list=ca_event_list)
     if Setts.OUT_DEST.value:
         if Setts.OUT_DEST.value.endswith('csv'):
-            printer.export_csv(f_path=Setts.OUT_DEST.value)
+            printer.write_csv(f_path=Setts.OUT_DEST.value)
         elif Setts.OUT_DEST.value.endswith('json'):
-            printer.export_json(f_path=Setts.OUT_DEST.value)
+            printer.write_json(f_path=Setts.OUT_DEST.value)
         else:
             printer.write_file(f_path=Setts.OUT_DEST.value)
     else:
