@@ -2,6 +2,7 @@
 # (c) 2016 Alek
 #  Proxy for getting relevant info from databases
 import logging
+from pprint import pprint
 
 import couchdb
 import dateutil.parser
@@ -274,6 +275,7 @@ class CouchData:
         search_query = self.QUERY_LIST % "', '".join(search_vals)
 
         results = self.db_couch.query(search_query)
+        pprint(results.rows)
         return results.rows
 
 

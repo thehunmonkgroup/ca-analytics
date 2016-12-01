@@ -6,9 +6,10 @@ import logging
 import os
 import sys
 from os.path import join as j
+from pprint import pprint
 
 from lib.ca_engine import get_ca_events
-from lib.db_engine import init_db
+from lib.database.engine import init_db
 from lib.extras import configure_argparse, Setts, OutputHandler, timeit
 
 rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
@@ -36,6 +37,9 @@ def evaluate_arguments():
 
 @timeit
 def main(start_cmd=None):
+    # start_cmd = '-u 109822325191351771849'.split()
+    start_cmd = '-e 321 430'.split()
+    start_cmd = '-e 321 '.split()
     args, parser = configure_argparse(rwd=rwd, start_cmd=start_cmd)
 
     # Load default cfg
