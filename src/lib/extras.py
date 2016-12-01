@@ -6,8 +6,10 @@ import argparse
 import collections
 import datetime as dt
 import errno
+import functools
 import logging
 import os
+import time
 from os.path import join as j
 
 import ruamel.yaml as yaml
@@ -343,6 +345,24 @@ def configure_argparse(rwd, start_cmd=None):
                           )
     args = parser.parse_args(args=start_cmd)
     return args, parser
+
+
+def timeit(func):
+    @functools.wraps(func)
+    def newfunc(*args, **kwargs):
+        start_time = time.time()
+        func(*args, **kwargs)
+        elapsed_time = time.time() - start_time
+
+        msg = 'Function [{name}] finished in [{ms}ms] ~[{min}:{sec}]min'
+        minutes, seconds = divmod(elapsed_time, 60)
+        format_args = {'name': func.__name__,
+                       'ms': int(elapsed_time * 1000),
+                       'min': int(minutes),
+                       'sec': int(seconds)}
+        print(msg.format(**format_args))
+
+    return newfunc
 
 
 class Setts:

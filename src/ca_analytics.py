@@ -9,7 +9,7 @@ from os.path import join as j
 
 from lib.ca_engine import get_ca_events
 from lib.db_engine import init_db
-from lib.extras import configure_argparse, Setts, OutputHandler
+from lib.extras import configure_argparse, Setts, OutputHandler, timeit
 
 rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
 if rwd not in sys.path:
@@ -34,6 +34,7 @@ def evaluate_arguments():
         printer.write_terminal()
 
 
+@timeit
 def main(start_cmd=None):
     args, parser = configure_argparse(rwd=rwd, start_cmd=start_cmd)
 
@@ -47,13 +48,11 @@ def main(start_cmd=None):
     evaluate_arguments()
 
 
-version = {'y': 2016, 'm': 11, 'd': 12}
+version = {'y': 2016, 'm': 12, 'd': 1}
 __version__ = '{y}.{m}.{d}'.format(**version)
 
 if __name__ == '__main__':
     try:
-        # TODO: Add logging
-        # TODO: docker CoachDB & MongoDB
         main()
     except Exception as e:
         log.exception(e)
