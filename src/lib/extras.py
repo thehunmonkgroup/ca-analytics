@@ -458,10 +458,16 @@ class Setts:
         'db_couch',
         desc='Reference to our couchDB')
 
-    _DETAILS_PROVIDER = Option(
-        'info_proxy',
-        desc='Proxy to CouchDB from which we get detailed info about events '
-             'and users.')
+    @ClassProperty
+    @classmethod
+    def DETAILS_PROVIDER(cls):
+        print('Invoked')
+        return {}
+        pass
+        # = Option(
+        # 'info_proxy',
+        # desc='Proxy to CouchDB from which we get detailed info about events '
+        #      'and users.')
 
     @classmethod
     def get_config(cls, f_pth=''):
@@ -495,7 +501,7 @@ class Setts:
         Refreshes app setts with yaml config file or cfg dict.
           Content of yaml cfg file will overwrite cfg dict!
 
-        :version: 2016.08.17
+        :version: 2016.12.03
         """
         if f_pth:
             log.debug('Loading (presumably) YAML file: "%s"', f_pth)
@@ -504,7 +510,11 @@ class Setts:
             cfg = {}
 
         for opt in cls.opt_list:
-            cfg_val = cfg.get(opt.key, None)
+            try:
+                cfg_val = cfg.get(opt.key, None)
+            except AttributeError:
+                # Those are setts as ClassProperties for app use, so skip it
+                continue
 
             if cfg_val is None and opt.value is None:
                 # Start
