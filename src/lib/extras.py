@@ -14,8 +14,6 @@ from os.path import join as j
 
 import ruamel.yaml as yaml
 
-from lib.database.proxy import CaDetailsProvider
-
 log = logging.getLogger(__name__)
 
 COUCH_DB_MISSING_DATA = 'Missing CouchDB data'
@@ -23,7 +21,7 @@ COUCH_DB_MISSING_TIME = dt.datetime(1988, 7, 28, 4, 0, 0)
 
 is_string = lambda val: isinstance(val, str)
 is_iterable = lambda val: isinstance(val, collections.Iterable)
-strftime_format = '%Y-%m-%d %H:%M:%S'
+STRFTIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 
 def make_iterable(evnt_ids='None', usr_ids='None'):

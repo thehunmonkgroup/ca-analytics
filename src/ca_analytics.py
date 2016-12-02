@@ -6,8 +6,9 @@ import logging
 import os
 import sys
 from os.path import join as j
+from pprint import pprint
 
-from lib.ca_engine import get_ca_events
+from lib.engine import get_ca_event_list
 from lib.database import init_db
 from lib.extras import configure_argparse, Setts, OutputHandler, timeit
 
@@ -25,20 +26,21 @@ def evaluate_arguments():
                                                 date_from=Setts.DATE_FROM.value,
                                                 date_to=Setts.DATE_TO.value)
 
-    ca_event_list = get_ca_events(db_data=db_data)
+    event_list = get_ca_event_list(selected_logs=db_data)
+    pprint(event_list)
 
-    printer = OutputHandler(ca_events_list=ca_event_list)
-    if Setts.OUT_DEST.value:
-        printer.write_file(f_path=Setts.OUT_DEST.value)
-    else:
-        printer.write_terminal()
+    # printer = OutputHandler(ca_events_list=ca_event_list)
+    # if Setts.OUT_DEST.value:
+    #     printer.write_file(f_path=Setts.OUT_DEST.value)
+    # else:
+    #     printer.write_terminal()
 
 
 @timeit
 def main(start_cmd=None):
     # start_cmd = '-u 109822325191351771849'.split()
     start_cmd = '-e 321 430'.split()
-    start_cmd = '-e 321 '.split()
+    # start_cmd = '-e 321 '.split()
     args, parser = configure_argparse(rwd=rwd, start_cmd=start_cmd)
 
     # Load default cfg
@@ -57,7 +59,7 @@ __version__ = '{y}.{m}.{d}'.format(**version)
 
 if __name__ == '__main__':
     try:
-        # TODO: lib/ca_engine.py:29
+        # TODO: lib/engine.py:29
         main()
     except Exception as e:
         log.exception(e)
