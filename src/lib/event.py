@@ -37,13 +37,13 @@ class CaEvent:
         ' Start/End Time: [{start_time}]/[{end_time}]'
     )
 
-    _details_provider = Setts._DETAILS_PROVIDER.value
+    # _details_provider = Setts.DETAILS_PROVIDER.value
 
     def __init__(self, event_id):
         self.event_id = event_id
         self._event_users = EventUsers()
 
-        self._raw_details = self._details_provider['']
+        self._raw_details = Setts.details_provider['']
         self._details = {}
 
     @property

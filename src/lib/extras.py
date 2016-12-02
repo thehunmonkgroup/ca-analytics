@@ -458,16 +458,21 @@ class Setts:
         'db_couch',
         desc='Reference to our couchDB')
 
+    _details_provider = Option(
+        'info_proxy',
+        desc='Proxy to CouchDB from which we get detailed info about events '
+             'and users.')
+
     @ClassProperty
     @classmethod
-    def DETAILS_PROVIDER(cls):
-        print('Invoked')
-        return {}
-        pass
-        # = Option(
-        # 'info_proxy',
-        # desc='Proxy to CouchDB from which we get detailed info about events '
-        #      'and users.')
+    def details_provider(cls):
+        # TODO: Resolve somehow cyclic import. Move it to AppSetts?
+        from lib.database import CaDetailsProvider
+        if cls._details_provider.value is None:
+            log.debug('Creating new CaDetailsProvider')
+            cls._details_provider.value = CaDetailsProvider()
+
+        return cls._details_provider.value
 
     @classmethod
     def get_config(cls, f_pth=''):

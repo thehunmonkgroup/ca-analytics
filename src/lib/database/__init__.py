@@ -4,7 +4,7 @@ from .proxy import CaDetailsProvider
 
 
 def init_db():
-    Setts._DETAILS_PROVIDER.value = CaDetailsProvider()
+    # Setts._DETAILS_PROVIDER.value = CaDetailsProvider()
 
     Setts._DB_MONGO.value = MongoData(
         connection_string=Setts.MONGO_STRING.value,
