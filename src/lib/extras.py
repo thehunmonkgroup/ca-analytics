@@ -14,6 +14,8 @@ from os.path import join as j
 
 import ruamel.yaml as yaml
 
+from lib.database.proxy import CaDetailsProvider
+
 log = logging.getLogger(__name__)
 
 COUCH_DB_MISSING_DATA = 'Missing CouchDB data'
@@ -449,6 +451,7 @@ class Setts:
         desc='Path to log file')
 
     # Program stuff
+    # TODO: Get those as property
     _DB_MONGO = Option(
         'db_mongo',
         desc='Reference to our mongoDB')
@@ -456,6 +459,11 @@ class Setts:
     _DB_COUCH = Option(
         'db_couch',
         desc='Reference to our couchDB')
+
+    _DETAILS_PROVIDER = Option(
+        'info_proxy',
+        desc='Proxy to CouchDB from which we get detailed info about events '
+             'and users.')
 
     @classmethod
     def get_config(cls, f_pth=''):

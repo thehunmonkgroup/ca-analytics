@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# (c) 2016 Alek
-#  Proxy for getting relevant info from databases
 import logging
 from pprint import pprint
 
@@ -9,7 +6,7 @@ import dateutil.parser
 from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError
 
-from lib.extras import Setts, is_string, is_iterable, get_couchdb_id
+from lib.extras import is_string, is_iterable, get_couchdb_id
 
 log = logging.getLogger(__name__)
 
@@ -363,14 +360,3 @@ class CouchData:
         results = self.db_couch.query(search_query)
         pprint(results.rows)
         return results.rows
-
-
-def init_db():
-    Setts._DB_MONGO.value = MongoData(
-        connection_string=Setts.MONGO_STRING.value,
-        database_name=Setts.MONGO_DATABASE.value
-    )
-    Setts._DB_COUCH.value = CouchData(
-        connection_string=Setts.COUCH_STRING.value,
-        database_name=Setts.COUCH_DATABASE.value
-    )

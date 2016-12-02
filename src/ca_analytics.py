@@ -6,10 +6,9 @@ import logging
 import os
 import sys
 from os.path import join as j
-from pprint import pprint
 
 from lib.ca_engine import get_ca_events
-from lib.database.engine import init_db
+from lib.database import init_db
 from lib.extras import configure_argparse, Setts, OutputHandler, timeit
 
 rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
@@ -48,15 +47,17 @@ def main(start_cmd=None):
     Setts.refresh(f_pth=args.cfg)
     # Load user args
     Setts.refresh(cfg=args.__dict__)
-    init_db()
+
+    init_db()  # TODO: Must it be called?
     evaluate_arguments()
 
 
-version = {'y': 2016, 'm': 12, 'd': 1}
+version = {'y': 2016, 'm': 12, 'd': 2}
 __version__ = '{y}.{m}.{d}'.format(**version)
 
 if __name__ == '__main__':
     try:
+        # TODO: lib/ca_engine.py:29
         main()
     except Exception as e:
         log.exception(e)
