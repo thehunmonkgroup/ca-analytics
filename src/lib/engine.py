@@ -29,8 +29,10 @@ def get_ca_event_list(selected_logs):
     for log_entry in selected_logs:
         event_id = log_entry[MongoFields.EVENT_ID]
         ca_event = ca_event_selector.get(event_id, CaEvent(event_id=event_id))
-        print(log_entry)
-
+        # print(log_entry)
+    ca_event_selector.get('asd', CaEvent(event_id=99999))
+    ca_event_selector.get('asd', CaEvent(event_id=116778749352797155772))
+    print('99999+1=', 99999+1)
         # Effective deduplication mechanism
         # events = collections.defaultdict(CaEvent)
         # # TODO: Implicitly initialize CaEvent with eventId - we need get proxy obj

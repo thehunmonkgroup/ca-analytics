@@ -2,6 +2,7 @@ import dateutil.parser
 import dateutil.relativedelta
 import logging
 
+from lib.database.engine import MongoFields
 from lib.extras import (
     Setts,
     COUCH_DB_MISSING_DATA,
@@ -37,13 +38,11 @@ class CaEvent:
         ' Start/End Time: [{start_time}]/[{end_time}]'
     )
 
-    # _details_provider = Setts.DETAILS_PROVIDER.value
-
     def __init__(self, event_id):
         self.event_id = event_id
         self._event_users = EventUsers()
 
-        self._raw_details = Setts.details_provider['']
+        self._raw_details = Setts.details_provider[event_id]
         self._details = {}
 
     @property
@@ -57,8 +56,8 @@ class CaEvent:
         if self._event_id is None:
             self._event_id = value
         elif self._event_id != value:
-            log.error(self._error_msg_change,
-                      'event_id', self.event_id, self._event_id, value)
+            log.error(self._error_msg_change, MongoFields.EVENT_ID,
+                      self.event_id, self._event_id, value)
 
     @property
     def start_time(self):
