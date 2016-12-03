@@ -1,13 +1,31 @@
-def get_event_stub_data():
-    return event_stub.copy()
+from lib.database.engine import EventFields, UserFields
+from lib.extras import get_couchdb_id
 
 
-def get_user_stub_data():
-    return user_stub.copy()
+def get_event_stub_data(event_id):
+    selected_event = event_stub.copy()
+
+    # Set ids
+    id_filed = selected_event[EventFields.ID_].format(get_couchdb_id(event_id))
+    selected_event[EventFields.ID_] = id_filed
+    selected_event[EventFields.ID] = event_id
+
+    return selected_event
 
 
+def get_user_stub_data(user_id):
+    selected_user = user_stub.copy()
+
+    id_filed = selected_user[UserFields.ID_].format(user_id)
+    selected_user[EventFields.ID_] = id_filed
+    selected_user[EventFields.ID] = user_id
+
+    return selected_user
+
+
+# TODO: Name of fields get from MongoFields. Also event can be generated.
 event_stub = {
-    '_id': None,
+    '_id': 'event/{}',
     '_rev': None,
     'adminProposedSessions': None,
     'admins': None,
@@ -41,7 +59,7 @@ user_stub = {
         'givenName': None
     },
     'superuser': None,
-    '_id': None,
+    '_id': 'user/{}',
     'admin': None,
     'link': None,
     'networkList': None,
