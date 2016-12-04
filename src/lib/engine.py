@@ -1,5 +1,6 @@
 import collections
 import logging
+from pprint import pprint
 
 from lib.database.engine import MongoFields
 from lib.event import CaEvent
@@ -28,12 +29,17 @@ def get_ca_event_list(selected_logs):
     ca_events_holder = {}
     for log_entry in selected_logs:
         event_id = log_entry[MongoFields.EVENT_ID]
-        ca_event = ca_events_holder.get(event_id, CaEvent(event_id=event_id))
+        try:
+            ca_event = ca_events_holder[event_id]
+        except KeyError:
+            ca_event = CaEvent(event_id=event_id)
+            ca_events_holder[event_id] = ca_event
         ca_event.add(log_entry=log_entry)
-        # print(log_entry)
-    ca_events_holder.get('asd', CaEvent(event_id=99999))
-    ca_events_holder.get('asd', CaEvent(event_id=116778749352797155772))
-    print('99999+1=', 99999+1)
+
+    # ca_events_holder.get('asd', CaEvent(event_id=99999))
+    # ca_events_holder.get('asd', CaEvent(event_id=116778749352797155772))
+    # print('99999+1=', 99999+1)
+    pprint(ca_events_holder)
         # Effective deduplication mechanism
         # events = collections.defaultdict(CaEvent)
         # # TODO: Implicitly initialize CaEvent with eventId - we need get proxy obj

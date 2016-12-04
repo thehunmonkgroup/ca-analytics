@@ -2,20 +2,26 @@ import logging
 
 import dateutil.parser
 
-from lib.extras import STRFTIME_FORMAT
+from lib.database.engine import MongoFields
+from lib.extras import STRFTIME_FORMAT, Setts
 
 log = logging.getLogger(__name__)
 
 
 class CaParticipant:
-    display_name = None
-
+    # Log entries
     _user_id = None
+    action = None
     _timestamp = None
     _timestamp_str = None
 
-    _mongo_raw_data = None
-    _couch_raw_data = None
+    # Details
+    display_name = None
+
+    # Storage variables
+    _raw_log_entry = None
+    _raw_details = None
+    _details = None
 
     # TODO: Proper error handling
     _error_msg_change = (
@@ -36,10 +42,12 @@ class CaParticipant:
           'userId': '108333970581946079744'}
         :param log_entry:
         """
-        self.user_id = log_entry['userId']
-        self.timestamp = log_entry['timestamp']
+        self.user_id = log_entry[MongoFields.USER_ID]
+        self.timestamp = log_entry[MongoFields.TIME_STAMP]
+        self.action = log_entry[MongoFields.ACTION]
 
-        self._mongo_raw_data = log_entry
+        self._raw_log_entry = log_entry
+        self._raw_details = Setts.details_provider[self.user_id]
 
     @property
     def user_id(self):
@@ -70,54 +78,6 @@ class CaParticipant:
         elif self._timestamp != value:
             log.error(self._error_msg_change,
                       'timestamp', self.user_id, self._timestamp, value)
-
-    @property
-    def couch_data(self):
-        # TODO: check if it can be copied
-        if self._couch_raw_data is not None:
-            return self._couch_raw_data.copy()
-        else:
-            return self._couch_raw_data
-
-    @couch_data.setter
-    def couch_data(self, value):
-        """
-           {'perms': {'joinEvents': True},
-           'name': {'givenName': 'V', 'familyName': 'Bnt'},
-           'displayName': 'V Bt',
-           'preferredContact': {},
-           'admin': False,
-           'id': '1001433634',
-           'link': 'https://plus.62434483634',
-           'networkList': {'391': ['1165647'],
-                           '417': ['10692356718'],
-                           '471': ['116485647'],
-                           '427': ['11034']},
-           'google_json': {'locale': 'en',
-                           'name': 'Vnt',
-                           'gender': 'female',
-                           'given_name': 'V',
-                           'email': 'v@gmail.com',
-                           'family_name': 'B',
-                           'picture': 'https://lh5.content.com/-KJAEs/kE/photo.jpg',
-                           'id': '10034',
-                           'link': 'https://plus.google.com/1034',
-                           'verified_email': True},
-           'isPlusUser': True,
-           '_rev': '60-3f9676bd925d1d5e35d7cbec75da8d90',
-           'picture': 'https://content.com/-KJkE/photo.jpg',
-           'superuser': False,
-           '_id': 'user/1034',
-           'provider': 'google',
-           'createdViaHangout': False,
-           'emails': [{'value': 'vt@gmail.com'}]}
-        """
-        self._couch_raw_data = value
-        self.display_name = value['displayName']
-
-    def set_missing(self):
-        log.warning('Usr [%s] - setting missing (TODO)', self.user_id)
-        # TODO: Set missing for CouchDB (this should not happen often)
 
     def __hash__(self):
         return hash(self.user_id)
