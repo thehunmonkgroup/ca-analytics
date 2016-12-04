@@ -50,5 +50,11 @@ class CaDetailsProvider(collections.MutableMapping):
         return details_proxy
 
     def get_details_from_db(self):
-        print('Downloading data from CouchDB')
-        print('List of ids to ask:', list(self._proxy_items.keys()))
+        # print('List of ids to ask:', list(self._proxy_items.keys()))
+        # Simulate CouchDB call
+        for ca_id in self._proxy_items:
+            self._proxy_items[ca_id].update({
+                'dateAndTime': '2016-05-12T19:00:00+00:00',
+                'duration': 6653,
+                'description': 'soomething!'
+            })

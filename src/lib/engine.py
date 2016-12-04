@@ -4,6 +4,7 @@ from pprint import pprint
 
 from lib.database.engine import MongoFields
 from lib.event import CaEvent
+from lib.extras import Setts
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +26,6 @@ def get_ca_event_list(selected_logs):
                           ]
     :return:
     """
-
     ca_events_holder = {}
     for log_entry in selected_logs:
         event_id = log_entry[MongoFields.EVENT_ID]
@@ -36,24 +36,11 @@ def get_ca_event_list(selected_logs):
             ca_events_holder[event_id] = ca_event
         ca_event.add(log_entry=log_entry)
 
-    # ca_events_holder.get('asd', CaEvent(event_id=99999))
-    # ca_events_holder.get('asd', CaEvent(event_id=116778749352797155772))
-    # print('99999+1=', 99999+1)
+    Setts.details_provider.get_details_from_db()
+
     pprint(ca_events_holder)
-        # Effective deduplication mechanism
-        # events = collections.defaultdict(CaEvent)
-        # # TODO: Implicitly initialize CaEvent with eventId - we need get proxy obj
-        #
-        # for row in selected_logs:
-        #     eventId = row['eventId']
-        #     events[eventId].append(log_entry=row)
-        #
-        # # Get rid of dict, and sort events by id
-        # ret = sorted(events.values(), key=lambda x: x.event_id)
-        #
-        # # TODO: Can be done in a more elegant way?
-        # fill_couchdb_info(ca_events_list=ret)
-        # return ret
+    for ca_ev in ca_events_holder.values():
+        print(ca_ev.event_participants())
 
 
 def get_ca_events_old(db_data):
