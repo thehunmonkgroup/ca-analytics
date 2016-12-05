@@ -39,7 +39,7 @@ def evaluate_arguments():
 @timeit
 def main(start_cmd=None):
     # start_cmd = '-u 109822325191351771849'.split()
-    start_cmd = '-e 321 430'.split()
+    # start_cmd = '-e 321 430'.split()
     # start_cmd = '-e 321 '.split()
     args, parser = configure_argparse(rwd=rwd, start_cmd=start_cmd)
 
@@ -59,8 +59,8 @@ __version__ = '{y}.{m}.{d}'.format(**version)
 
 if __name__ == '__main__':
     # TODO: Decorator for properties, when _field is not None return earlier
+    # TODO: Sane error messages when no details for event/user
     try:
-        # TODO: lib/engine.py:29
         main()
     except Exception as e:
         log.exception(e)
