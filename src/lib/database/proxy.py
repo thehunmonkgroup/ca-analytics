@@ -1,6 +1,7 @@
 import collections
 
 from lib.database.stub_data import get_event_stub_data, get_user_stub_data
+from lib.extras import Setts
 
 
 class CaDetailsProvider(collections.MutableMapping):
@@ -69,7 +70,7 @@ class CaDetailsProvider(collections.MutableMapping):
         return ca_id > cls._MAX_EVENT_ID
 
     def get_details_from_db(self):
-        def get_event_and_participants_id_list():
+        def get_event_and_user_id_lists():
             evnt_ids, usr_ids = [], []
             for ca_id in self._proxy_items:
                 if self._is_user(ca_id=ca_id):
@@ -78,18 +79,8 @@ class CaDetailsProvider(collections.MutableMapping):
                     evnt_ids.append(ca_id)
             return evnt_ids, usr_ids
 
-        # print('List of ids to ask:', list(self._proxy_items.keys()))
-        # Simulate CouchDB call
-
-        event_ids, participants_ids = get_event_and_participants_id_list()
-        print(event_ids, participants_ids)
-
-
-        # couch_data = self.get_couch_data(event_ids=self.event_id,
-        #                                  user_ids=users_id_list)
-
-
-        # self._couch_raw_db_data = tuple(couch_data)
-        # For ease & convenience
-        # self.couch_data = {int(row.value.get('id', '-1')): row
-        #                    for row in self._couch_raw_db_data}
+        event_ids, user_ids = get_event_and_user_id_lists()
+        couch_data = Setts._DB_COUCH.value.get_data(event_ids=event_ids,
+                                                    user_ids=user_ids)
+        for row in couch_data:
+            self._proxy_items[int(row.key)].update(row.value)
