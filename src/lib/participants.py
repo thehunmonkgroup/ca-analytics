@@ -2,7 +2,7 @@ import logging
 
 import dateutil.parser
 
-from lib.database.engine import MongoFields, UserFields
+from lib.database import MongoFields, UserFields
 from lib.extras import STRFTIME_FORMAT, Setts
 
 log = logging.getLogger(__name__)

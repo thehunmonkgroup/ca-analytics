@@ -1,5 +1,5 @@
-from lib.database.engine import EventFields, UserFields
 from lib.extras import get_couchdb_id
+from .fields import EventFields, UserFields
 
 
 def get_event_stub_data(event_id):

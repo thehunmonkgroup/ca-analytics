@@ -3,7 +3,10 @@ import logging
 import dateutil.parser
 import dateutil.relativedelta
 
-from lib.database.engine import MongoFields, EventFields
+from lib.database import (
+    EventFields,
+    MongoFields
+)
 from lib.extras import (
     Setts,
     STRFTIME_FORMAT,

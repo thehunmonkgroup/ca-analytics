@@ -2,7 +2,7 @@ import collections
 import logging
 from pprint import pprint
 
-from lib.database.engine import MongoFields
+from lib.database import MongoFields
 from lib.event import CaEvent
 from lib.extras import Setts
 

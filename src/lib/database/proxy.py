@@ -77,6 +77,7 @@ class CaDetailsProvider(collections.MutableMapping):
                 else:
                     evnt_ids.append(ca_id)
             return evnt_ids, usr_ids
+
         # print('List of ids to ask:', list(self._proxy_items.keys()))
         # Simulate CouchDB call
 
@@ -84,8 +85,8 @@ class CaDetailsProvider(collections.MutableMapping):
         print(event_ids, participants_ids)
 
 
-        couch_data = self.get_couch_data(event_ids=self.event_id,
-                                         user_ids=users_id_list)
+        # couch_data = self.get_couch_data(event_ids=self.event_id,
+        #                                  user_ids=users_id_list)
 
 
         # self._couch_raw_db_data = tuple(couch_data)
