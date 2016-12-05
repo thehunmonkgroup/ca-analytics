@@ -82,7 +82,7 @@ class CaParticipant:
         try:
             return self.timestamp.strftime(STRFTIME_FORMAT)
         except Exception as e:
-            log.error(e)
+            log.debug(e)
             return str(self._timestamp)
 
     @property
@@ -285,6 +285,9 @@ class ParticipantsHandler:
     """
     _participant_list = None
 
+    def __init__(self):
+        self._participant_list = []
+
     @property
     def unique(self):
         """
@@ -311,8 +314,4 @@ class ParticipantsHandler:
 
     def add(self, log_entry):
         ca_participant = CaParticipant(log_entry=log_entry)
-
-        if self._participant_list is None:
-            self._participant_list = [ca_participant]
-        else:
-            self._participant_list.append(ca_participant)
+        self._participant_list.append(ca_participant)

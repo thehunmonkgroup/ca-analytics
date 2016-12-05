@@ -8,6 +8,21 @@ class CaDetailsProvider(collections.MutableMapping):
     _proxy_items = None
 
     def __init__(self):
+        """
+        'Before' this proxy we call people the participants, cos it's related
+          to event.
+        'After' this class (going to DB) we switch the names and call them
+          users, as it's related to users of the system.
+        +-------+
+        | Event |
+        +---+---+
+            |
+            + Participant                 User    +----+
+            + Participant \  +-------+  / User    |    |
+            + Participant -- | Proxy | -- User -- | DB |
+            + ...         /  +-------+  \ ...     |    |
+            + ...                                 +----+
+        """
         self._proxy_items = {}
 
     def __delitem__(self, key):
@@ -43,18 +58,37 @@ class CaDetailsProvider(collections.MutableMapping):
 
     @classmethod
     def _get_proxy_stub(cls, ca_id):
-        if ca_id > cls._MAX_EVENT_ID:
+        if cls._is_user(ca_id=ca_id):
             details_proxy = get_user_stub_data(user_id=ca_id)
         else:
             details_proxy = get_event_stub_data(event_id=ca_id)
         return details_proxy
 
+    @classmethod
+    def _is_user(cls, ca_id):
+        return ca_id > cls._MAX_EVENT_ID
+
     def get_details_from_db(self):
+        def get_event_and_participants_id_list():
+            evnt_ids, usr_ids = [], []
+            for ca_id in self._proxy_items:
+                if self._is_user(ca_id=ca_id):
+                    usr_ids.append(ca_id)
+                else:
+                    evnt_ids.append(ca_id)
+            return evnt_ids, usr_ids
         # print('List of ids to ask:', list(self._proxy_items.keys()))
         # Simulate CouchDB call
-        for ca_id in self._proxy_items:
-            self._proxy_items[ca_id].update({
-                'dateAndTime': '2016-05-12T19:00:00+00:00',
-                'duration': 6653,
-                'description': 'soomething!'
-            })
+
+        event_ids, participants_ids = get_event_and_participants_id_list()
+        print(event_ids, participants_ids)
+
+
+        couch_data = self.get_couch_data(event_ids=self.event_id,
+                                         user_ids=users_id_list)
+
+
+        # self._couch_raw_db_data = tuple(couch_data)
+        # For ease & convenience
+        # self.couch_data = {int(row.value.get('id', '-1')): row
+        #                    for row in self._couch_raw_db_data}

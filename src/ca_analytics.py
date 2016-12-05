@@ -39,7 +39,7 @@ def evaluate_arguments():
 @timeit
 def main(start_cmd=None):
     # start_cmd = '-u 109822325191351771849'.split()
-    # start_cmd = '-e 321 430'.split()
+    start_cmd = '-e 321 430'.split()
     # start_cmd = '-e 321 '.split()
     args, parser = configure_argparse(rwd=rwd, start_cmd=start_cmd)
 
