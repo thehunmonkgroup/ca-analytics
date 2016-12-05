@@ -149,4 +149,4 @@ class CaEvent:
     def __repr__(self):
         txt = 'eventId [%s] users_count [%s] time [%s]-[%s] description [%s]'
         return txt % (self.event_id, len(self.event_participants()),
-                      self.start_time, self.end_time, self.description)
+                      self.start_time_str, self.end_time_str, self.description)

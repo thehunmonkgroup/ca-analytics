@@ -2,7 +2,7 @@ import logging
 
 import dateutil.parser
 
-from lib.database.engine import MongoFields
+from lib.database.engine import MongoFields, UserFields
 from lib.extras import STRFTIME_FORMAT, Setts
 
 log = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ class CaParticipant:
     _timestamp_str = None
 
     # Details
-    display_name = None
+    _display_name = None
 
     # Storage variables
     _raw_log_entry = None
@@ -43,7 +43,6 @@ class CaParticipant:
         :param log_entry:
         """
         self.user_id = log_entry[MongoFields.USER_ID]
-        self.timestamp = log_entry[MongoFields.TIME_STAMP]
         self.action = log_entry[MongoFields.ACTION]
 
         self._raw_log_entry = log_entry
@@ -65,19 +64,32 @@ class CaParticipant:
 
     @property
     def timestamp(self):
+        if self._timestamp is not None:
+            return self._timestamp
+
+        raw_value = self._raw_log_entry[MongoFields.TIMESTAMP]
+        try:
+            self._timestamp = dateutil.parser.parse(raw_value)
+        except AttributeError as e:
+            log.warning(
+                'Error converting [%s] to date object for participant [%s]. '
+                'Returning his action [%s] as [%s]. \n %s',
+                raw_value, self.user_id, self.action, self._timestamp, e)
         return self._timestamp
 
-    @timestamp.setter
-    def timestamp(self, value):
-        """ '2016-07-02T20:35:40.896Z' """
-        self._timestamp_str = str(value)
-        value = dateutil.parser.parse(value)
+    @property
+    def timestamp_str(self):
+        try:
+            return self.timestamp.strftime(STRFTIME_FORMAT)
+        except Exception as e:
+            log.error(e)
+            return str(self._timestamp)
 
-        if self._timestamp is None:
-            self._timestamp = value
-        elif self._timestamp != value:
-            log.error(self._error_msg_change,
-                      'timestamp', self.user_id, self._timestamp, value)
+    @property
+    def display_name(self):
+        if self._display_name is None:
+            self._display_name = self._raw_details[UserFields.DISPLAY_NAME]
+        return self._display_name
 
     def __hash__(self):
         return hash(self.user_id)
@@ -108,11 +120,11 @@ class CaParticipant:
 
     def __str__(self):
         data_for_templ = (self.user_id, self.display_name,
-                          self.timestamp.strftime(STRFTIME_FORMAT))
+                          self.timestamp_str)
         return self._str_representation_templ % data_for_templ
 
     def __repr__(self):
-        return 'userId [%s]@[%s]' % (self.user_id, self.timestamp)
+        return 'userId [%s]@[%s]' % (self.user_id, self.timestamp_str)
 
 
 class CaUserOld:
@@ -271,7 +283,7 @@ class ParticipantsHandler:
     If you want to get all users from particular event, you must change hash
       algorithm of the CaUser class, so that set() won't throw it out.
     """
-    _users_list = None
+    _participant_list = None
 
     @property
     def unique(self):
@@ -281,7 +293,7 @@ class ParticipantsHandler:
 
         :return:
         """
-        if self._users_list is None:
+        if self._participant_list is None:
             log.warning('Accessing uninitialized user list')
             return []
         else:
@@ -290,7 +302,7 @@ class ParticipantsHandler:
             # As it happens with logs-earliest date comes first. And this is
             # the object that is retained in set. The rest (later mentions of
             # user connecting to the event) is disposed. Can we relay on it?
-            return sorted(set(self._users_list))
+            return sorted(set(self._participant_list))
 
     @property
     def unique_ids(self):
@@ -298,9 +310,9 @@ class ParticipantsHandler:
         return sorted(set(ids))
 
     def add(self, log_entry):
-        ca_user = CaParticipant(log_entry=log_entry)
+        ca_participant = CaParticipant(log_entry=log_entry)
 
-        if self._users_list is None:
-            self._users_list = [ca_user]
+        if self._participant_list is None:
+            self._participant_list = [ca_participant]
         else:
-            self._users_list.append(ca_user)
+            self._participant_list.append(ca_participant)

@@ -22,7 +22,7 @@ class MongoFields:
     EVENT_ID = 'eventId'
     LEVEL = 'level'
     MESSAGE = 'message'
-    TIME_STAMP = 'timestamp'
+    TIMESTAMP = 'timestamp'
     USER_ID = 'userId'
 
 
@@ -65,7 +65,7 @@ class UserFields:
     ADMIN_PROPOSED_SESSIONS = 'adminProposedSessions'
     ADMIN = 'admin'
     CREATED_VIA_HANGOUT = 'createdViaHangout'
-    display_name = 'displayName'
+    DISPLAY_NAME = 'displayName'
     EMAILS = 'emails'
 
     GOOGLE_JSON = 'google_json'
