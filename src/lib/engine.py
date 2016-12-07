@@ -38,9 +38,10 @@ def get_ca_event_list(selected_logs):
 
     Setts.details_provider.get_details_from_db()
 
-    pprint(ca_events_holder)
-    for ca_ev in ca_events_holder.values():
-        print(ca_ev.event_participants())
+    return list(ca_events_holder.values())
+    # pprint(ca_events_holder)
+    # for ca_ev in :
+    #     print(ca_ev.event_participants())
 
 
 def get_ca_events_old(db_data):

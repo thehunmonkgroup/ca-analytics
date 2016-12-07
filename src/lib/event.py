@@ -38,10 +38,21 @@ class CaEvent:
         'Tried to change [%s] of the event [%s]! [%s]->[%s]. '
         'This should never happen. Statistics may be corrupted.'
     )
+    _error_msg_start_time = (
+        'Error converting date [%s] to object for event [%s]. '
+        'Returning start_date as [%s]. Error [%s]'
+    )
+    _error_msg_end_time = (
+        'Error estimating end time for the event [%s]. '
+        'Start_time [%s], duration [%s], end_time [%s]. Error [%s]'
+    )
+
     _str_representation_templ = (
         '** Event [{event_id}] - [{description}], CalendarId: [{calendar_id}],'
         ' Start/End Time: [{start_time}]/[{end_time}]'
     )
+
+    _silenced_exceptions = set()
 
     def __init__(self, event_id):
         """
@@ -99,9 +110,11 @@ class CaEvent:
         try:
             self._start_time = dateutil.parser.parse(raw_value)
         except AttributeError as e:
-            log.warning('Error converting [%s] to date object for event [%s]. '
-                        'Returning start_date as [%s]. \n %s',
+            log_handler = self._get_log_handler(
+                exception_key=(self.event_id, self._error_msg_start_time))
+            log_handler(self._error_msg_start_time,
                         raw_value, self.event_id, self._start_time, e)
+
         return self._start_time
 
     @property
@@ -122,8 +135,9 @@ class CaEvent:
             dt = dateutil.relativedelta.relativedelta(minutes=duration)
             self._end_time = self.start_time + dt
         except TypeError as e:
-            log.warning('Error estimating end time for the event [%s]. '
-                        'Start_time [%s], duration [%s], end_time [%s].\n %s',
+            log_handler = self._get_log_handler(
+                exception_key=(self.event_id, self._error_msg_start_time))
+            log_handler(self._error_msg_end_time,
                         self.event_id, self.start_time, duration,
                         self._end_time, e)
         return self._end_time
@@ -138,6 +152,21 @@ class CaEvent:
 
     def event_participants(self, sort_by=None):
         return self._event_participants.unique
+
+    @classmethod
+    def _get_log_handler(cls, exception_key):
+        """
+        We want to let user know only with the first message that there is
+         something wrong. The rest can be silenced.
+
+        :param exception_key:
+        :return:
+        """
+        if exception_key in cls._silenced_exceptions:
+            return log.debug
+        else:
+            cls._silenced_exceptions.add(exception_key)
+            return log.warning
 
     def __str__(self):
         format_data = {
