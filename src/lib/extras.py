@@ -1,10 +1,5 @@
-#!/usr/bin/env python3
-# (c) 2016 Alek
-#  Exports Circle Anywhere analytical informations
-
 import argparse
 import collections
-import datetime as dt
 import errno
 import functools
 import logging
@@ -16,11 +11,9 @@ import ruamel.yaml as yaml
 
 log = logging.getLogger(__name__)
 
-COUCH_DB_MISSING_DATA = 'Missing CouchDB data'
-COUCH_DB_MISSING_TIME = dt.datetime(1988, 7, 28, 4, 0, 0)
-
 is_string = lambda val: isinstance(val, str)
 is_iterable = lambda val: isinstance(val, collections.Iterable)
+# TODO: Create base CaClass, place it there and add err silencing there too
 STRFTIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 
@@ -68,7 +61,7 @@ class OutputHandler:
         for each_ca_event in self._ca_events_list:
             out.append(str(each_ca_event))
             user_list = [self._user_print_templ % str(usr) for usr
-                         in each_ca_event.event_users]
+                         in each_ca_event.event_participants()]
             out.extend(user_list)
             out.append('')
 
