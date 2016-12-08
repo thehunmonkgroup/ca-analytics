@@ -1,7 +1,3 @@
-#!/usr/bin/env python3
-# (c) 2016 Alek
-#  Exports Circle Anywhere analytical informations
-
 import argparse
 import collections
 import csv
@@ -43,7 +39,8 @@ class OutputHandler:
     _ca_events_list = None
     _lines = None
     _user_print_templ = '  %s'
-    _csv_user_export_fieldnames = ('Event ID', 'Description', 'Calendar ID', 'Start time', 'End time')
+    _csv_user_export_fieldnames = ('Event ID', 'Description', 'Calendar ID',
+                                   'Start time', 'End time')
     _csv_event_export_fieldnames = ('User ID', 'User name', 'Joined')
     _csv_export_all_fieldnames = ('Event ID', 'Description',
                                   'Calendar ID', 'Start time',
@@ -85,12 +82,15 @@ class OutputHandler:
         f_path = norm_path(f_path, mkfile=False, mkdir=False)
 
         def create_writer(f, fieldnames):
-            writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore', quoting=csv.QUOTE_NONNUMERIC)
+            writer = csv.DictWriter(f,
+                                    fieldnames=fieldnames,
+                                    extrasaction='ignore',
+                                    quoting=csv.QUOTE_NONNUMERIC)
             writer.writeheader()
             return writer
 
+        print('* Exporting as: "%s"' % f_path)
         with open(f_path, 'w') as f:
-            print('* Exporting as: "%s"' % f_path)
             if Setts.USER.value:
                 writer = create_writer(f, self._csv_user_export_fieldnames)
                 for each_ca_event in self._ca_events_list:
@@ -112,7 +112,7 @@ class OutputHandler:
                         event_dict['User name'] = user['User name']
                         event_dict['Joined'] = user['Joined']
                         writer.writerow(event_dict)
-            print('* Done')
+        print('* Done')
 
     def write_json(self, f_path):
         print('* Exporting as: "%s"' % f_path)
@@ -122,14 +122,19 @@ class OutputHandler:
             for each_ca_event in self._ca_events_list:
                 event_dict = self.convert_to_dictionary(each_ca_event)
                 export_list.append(event_dict)
-            json.dump(export_list, f, sort_keys=False)
-            print('* Done')
+            json.dump(export_list, f, indent=2)
+        print('* Done')
 
     @classmethod
     def convert_to_dictionary(cls, event):
-        out = {'Event ID': event.event_id, 'Description': event.description, 'Calendar ID': event.calendar_id,
-               'Start time': event.start_time_str, 'End time': event.end_time_str}
-        users = [{'User ID': user.user_id, 'User name': user.display_name, 'Joined': user.timestamp_str}
+        out = {'Event ID': event.event_id,
+               'Description': event.description,
+               'Calendar ID': event.calendar_id,
+               'Start time': event.start_time_str,
+               'End time': event.end_time_str}
+        users = [{'User ID': user.user_id,
+                  'User name': user.display_name,
+                  'Joined': user.timestamp_str}
                  for user in event.event_users]
         out['Users'] = users
         return out
