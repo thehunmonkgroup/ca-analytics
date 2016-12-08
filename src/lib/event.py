@@ -39,11 +39,11 @@ class CaEvent:
         'This should never happen. Statistics may be corrupted.'
     )
     _error_msg_start_time = (
-        'Error converting date [%s] to object for event [%s]. '
-        'Returning start_date as [%s]. Error [%s]'
+        "Start date and probably all details for event [%s] are missing "
+        "in CouchDB. Returning start_date as [%s]. Error [%s]"
     )
     _error_msg_end_time = (
-        'Error estimating end time for the event [%s]. '
+        'Error estimating end time for the event [%s] due to details lack. '
         'Start_time [%s], duration [%s], end_time [%s]. Error [%s]'
     )
 
@@ -112,8 +112,7 @@ class CaEvent:
         except AttributeError as e:
             log_handler = self._get_log_handler(
                 exception_key=(self.event_id, self._error_msg_start_time))
-            log_handler(self._error_msg_start_time,
-                        raw_value, self.event_id, self._start_time, e)
+            log_handler(self._error_msg_start_time,self.event_id, self._start_time, e)
 
         return self._start_time
 
