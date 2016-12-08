@@ -11,7 +11,7 @@ from unittest.mock import patch
 import ca_analytics
 from ca_analytics import main
 from example_data import ResponseFactory, Event111, Event222
-from lib.db_engine import MongoData, CouchData
+from lib.database import MongoData, CouchData
 
 rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
 if rwd not in sys.path:

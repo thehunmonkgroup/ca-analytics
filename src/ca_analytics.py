@@ -8,6 +8,9 @@ import sys
 from os.path import join as j
 from lib.ca_engine import get_ca_events
 from lib.db_engine import init_db
+
+from lib.database import init_db
+from lib.engine import get_ca_event_list
 from lib.extras import configure_argparse, Setts, OutputHandler
 
 rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
@@ -24,9 +27,9 @@ def evaluate_arguments():
                                                 date_from=Setts.DATE_FROM.value,
                                                 date_to=Setts.DATE_TO.value)
 
-    ca_event_list = get_ca_events(db_data=db_data)
+    event_list = get_ca_event_list(selected_logs=db_data)
 
-    printer = OutputHandler(ca_events_list=ca_event_list)
+    printer = OutputHandler(ca_events_list=event_list)
     if Setts.OUT_DEST.value:
         if Setts.OUT_DEST.value.endswith('csv'):
             printer.write_csv(f_path=Setts.OUT_DEST.value)
@@ -47,17 +50,17 @@ def main(start_cmd=None):
     Setts.refresh(f_pth=args.cfg)
     # Load user args
     Setts.refresh(cfg=args.__dict__)
-    init_db()
+
+    init_db()  # TODO: Must it be called?
     evaluate_arguments()
 
 
-version = {'y': 2016, 'm': 11, 'd': 12}
+version = {'y': 2016, 'm': 12, 'd': 8}
 __version__ = '{y}.{m}.{d}'.format(**version)
 
 if __name__ == '__main__':
+    # TODO: Decorator for properties, when _field is not None return earlier
     try:
-        # TODO: Add logging
-        # TODO: docker CoachDB & MongoDB
         main()
     except Exception as e:
         log.exception(e)
