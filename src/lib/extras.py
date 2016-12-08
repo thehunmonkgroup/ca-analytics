@@ -1,25 +1,20 @@
-#!/usr/bin/env python3
-# (c) 2016 Alek
-#  Exports Circle Anywhere analytical informations
-
 import argparse
 import collections
-import datetime as dt
 import errno
+import functools
 import logging
 import os
+import time
 from os.path import join as j
 
 import ruamel.yaml as yaml
 
 log = logging.getLogger(__name__)
 
-COUCH_DB_MISSING_DATA = 'Missing CouchDB data'
-COUCH_DB_MISSING_TIME = dt.datetime(1988, 7, 28, 4, 0, 0)
-
 is_string = lambda val: isinstance(val, str)
 is_iterable = lambda val: isinstance(val, collections.Iterable)
-strftime_format = '%Y-%m-%d %H:%M:%S'
+# TODO: Create base CaClass, place it there and add err silencing there too
+STRFTIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 
 def make_iterable(evnt_ids='None', usr_ids='None'):
@@ -66,7 +61,7 @@ class OutputHandler:
         for each_ca_event in self._ca_events_list:
             out.append(str(each_ca_event))
             user_list = [self._user_print_templ % str(usr) for usr
-                         in each_ca_event.event_users]
+                         in each_ca_event.event_participants()]
             out.extend(user_list)
             out.append('')
 
@@ -345,6 +340,24 @@ def configure_argparse(rwd, start_cmd=None):
     return args, parser
 
 
+def timeit(func):
+    @functools.wraps(func)
+    def newfunc(*args, **kwargs):
+        start_time = time.time()
+        func(*args, **kwargs)
+        elapsed_time = time.time() - start_time
+
+        msg = 'Function [{name}] finished in [{ms}ms] ~[{min}:{sec}]min'
+        minutes, seconds = divmod(elapsed_time, 60)
+        format_args = {'name': func.__name__,
+                       'ms': int(elapsed_time * 1000),
+                       'min': int(minutes),
+                       'sec': int(seconds)}
+        print(msg.format(**format_args))
+
+    return newfunc
+
+
 class Setts:
     # If args are validated, the default option should always be set
     class Option:
@@ -429,6 +442,7 @@ class Setts:
         desc='Path to log file')
 
     # Program stuff
+    # TODO: Get those as property
     _DB_MONGO = Option(
         'db_mongo',
         desc='Reference to our mongoDB')
@@ -436,6 +450,22 @@ class Setts:
     _DB_COUCH = Option(
         'db_couch',
         desc='Reference to our couchDB')
+
+    _details_provider = Option(
+        'info_proxy',
+        desc='Proxy to CouchDB from which we get detailed info about events '
+             'and users.')
+
+    @ClassProperty
+    @classmethod
+    def details_provider(cls):
+        # TODO: Resolve somehow cyclic import. Move it to AppSetts?
+        from lib.database import CaDetailsProvider
+        if cls._details_provider.value is None:
+            log.debug('Creating new CaDetailsProvider')
+            cls._details_provider.value = CaDetailsProvider()
+
+        return cls._details_provider.value
 
     @classmethod
     def get_config(cls, f_pth=''):
@@ -469,7 +499,7 @@ class Setts:
         Refreshes app setts with yaml config file or cfg dict.
           Content of yaml cfg file will overwrite cfg dict!
 
-        :version: 2016.08.17
+        :version: 2016.12.03
         """
         if f_pth:
             log.debug('Loading (presumably) YAML file: "%s"', f_pth)
@@ -478,7 +508,11 @@ class Setts:
             cfg = {}
 
         for opt in cls.opt_list:
-            cfg_val = cfg.get(opt.key, None)
+            try:
+                cfg_val = cfg.get(opt.key, None)
+            except AttributeError:
+                # Those are setts as ClassProperties for app use, so skip it
+                continue
 
             if cfg_val is None and opt.value is None:
                 # Start
