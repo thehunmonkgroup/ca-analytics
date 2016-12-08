@@ -213,3 +213,5 @@ Session.vim
 .netrwhist
 # auto-generated tag files
 tags
+/conf/db_data/circleanywhere.couch.gz
+/conf/db_data/circleanywhere.couch
