@@ -9,7 +9,7 @@ from os.path import join as j
 
 from lib.database import init_db
 from lib.engine import get_ca_event_list
-from lib.extras import configure_argparse, Setts, OutputHandler, timeit
+from lib.extras import configure_argparse, Setts, OutputHandler
 
 rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
 if rwd not in sys.path:
@@ -34,7 +34,6 @@ def evaluate_arguments():
         printer.write_terminal()
 
 
-@timeit
 def main(start_cmd=None):
     args, parser = configure_argparse(rwd=rwd, start_cmd=start_cmd)
 

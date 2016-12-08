@@ -1,6 +1,5 @@
 import collections
 import logging
-from pprint import pprint
 
 from lib.database import MongoFields
 from lib.event import CaEvent
@@ -39,9 +38,6 @@ def get_ca_event_list(selected_logs):
     Setts.details_provider.get_details_from_db()
 
     return list(ca_events_holder.values())
-    # pprint(ca_events_holder)
-    # for ca_ev in :
-    #     print(ca_ev.event_participants())
 
 
 def get_ca_events_old(db_data):
