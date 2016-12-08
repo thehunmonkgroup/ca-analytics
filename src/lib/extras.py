@@ -39,9 +39,6 @@ class OutputHandler:
     _ca_events_list = None
     _lines = None
     _user_print_templ = '  %s'
-    _csv_user_export_fieldnames = ('Event ID', 'Description', 'Calendar ID',
-                                   'Start time', 'End time')
-    _csv_event_export_fieldnames = ('User ID', 'User name', 'Joined')
     _csv_export_all_fieldnames = ('Event ID', 'Description',
                                   'Calendar ID', 'Start time',
                                   'End time', 'User ID',
@@ -80,38 +77,19 @@ class OutputHandler:
 
     def write_csv(self, f_path):
         f_path = norm_path(f_path, mkfile=False, mkdir=False)
-
-        def create_writer(f, fieldnames):
-            writer = csv.DictWriter(f,
-                                    fieldnames=fieldnames,
+        print('* Exporting as: "%s"' % f_path)
+        with open(f_path, 'w') as f:
+            writer = csv.DictWriter(f, fieldnames=self._csv_export_all_fieldnames,
                                     extrasaction='ignore',
                                     quoting=csv.QUOTE_NONNUMERIC)
             writer.writeheader()
-            return writer
-
-        print('* Exporting as: "%s"' % f_path)
-        with open(f_path, 'w') as f:
-            if Setts.USER.value:
-                writer = create_writer(f, self._csv_user_export_fieldnames)
-                for each_ca_event in self._ca_events_list:
-                    event_dict = self.convert_to_dictionary(each_ca_event)
+            for each_ca_event in self._ca_events_list:
+                event_dict = self.convert_to_dictionary(each_ca_event)
+                for user in event_dict['Users']:
+                    event_dict['User ID'] = user['User ID']
+                    event_dict['User name'] = user['User name']
+                    event_dict['Joined'] = user['Joined']
                     writer.writerow(event_dict)
-
-            elif Setts.EVENT.value:
-                writer = create_writer(f, self._csv_event_export_fieldnames)
-                for each_ca_event in self._ca_events_list:
-                    event_dict = self.convert_to_dictionary(each_ca_event)
-                    writer.writerows(event_dict['Users'])
-
-            else:
-                writer = create_writer(f, self._csv_export_all_fieldnames)
-                for each_ca_event in self._ca_events_list:
-                    event_dict = self.convert_to_dictionary(each_ca_event)
-                    for user in event_dict['Users']:
-                        event_dict['User ID'] = user['User ID']
-                        event_dict['User name'] = user['User name']
-                        event_dict['Joined'] = user['Joined']
-                        writer.writerow(event_dict)
         print('* Done')
 
     def write_json(self, f_path):
