@@ -27,15 +27,21 @@ def evaluate_arguments():
 
     event_list = get_ca_event_list(selected_logs=db_data)
 
-    printer = OutputHandler(ca_events_list=event_list)
-    if Setts.OUT_DEST.value:
-        printer.write_file(f_path=Setts.OUT_DEST.value)
-    else:
-        printer.write_terminal()
+    # printer = OutputHandler(ca_events_list=event_list)
+    # if Setts.OUT_DEST.value:
+    #     printer.write_file(f_path=Setts.OUT_DEST.value)
+    # else:
+    #     printer.write_terminal()
 
 
 def main(start_cmd=None):
+    # start_cmd = '-h'.split()
+    start_cmd = '--order_by eventId --order_by dateAndTime --order_by displayName'.split()
+    # TODO: Check how it's behaving with yaml
+    start_cmd = '--order_by eventId dateAndTime '.split()
+    start_cmd = '-u 123 456'.split()
     args, parser = configure_argparse(rwd=rwd, start_cmd=start_cmd)
+    # print(args)
 
     # Load default cfg
     Setts.refresh(f_pth=j(rwd, Setts.CFG_PATH.value))

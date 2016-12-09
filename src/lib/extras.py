@@ -6,6 +6,7 @@ import logging
 import os
 import time
 from os.path import join as j
+from pprint import pprint
 
 import ruamel.yaml as yaml
 
@@ -235,6 +236,7 @@ def configure_argparse(rwd, start_cmd=None):
         couchdb_database=None,
         date_from=None,
         date_to=None,
+        order_by: eventId,
         event=None,
         log=None,
         mongo_database=None,
@@ -243,7 +245,13 @@ def configure_argparse(rwd, start_cmd=None):
         user=None
     )
     """
-
+    # TODO: Move it to inside/get from setts class
+    from lib.database import EventFields
+    from lib.database import MongoFields
+    from lib.database import UserFields
+    order_by_args = {'event_id': MongoFields.EVENT_ID,
+                     'start_time': EventFields.DATE_AND_TIME,
+                     'first_name': UserFields.DISPLAY_NAME}
     parser = argparse.ArgumentParser(
         description='Exports Circle Anywhere analytical information',
         add_help=False,
@@ -252,7 +260,8 @@ def configure_argparse(rwd, start_cmd=None):
                '[-u [USER_ID [USER_ID ...]]] '
                '[--date_from DATE] '
                '[--date_to DATE] '
-               '[CONFIGURATION] [-h]')
+               '[--order_by [{event_id}|{start_time}|{first_name}]] '
+               '[CONFIGURATION] [-h]').format(**order_by_args)
     )
 
     stats_opt = parser.add_argument_group('Analytics Options')
@@ -282,6 +291,33 @@ def configure_argparse(rwd, start_cmd=None):
                            help=Setts.DATE_TO.desc,
                            metavar='DATE',
                            type=str,
+                           )
+
+    class ValidateOrderBy(argparse.Action):
+        def __call__(self, parser, args, values, option_string=None):
+            print('args', args)
+            print('values', values)
+            print('option_string', option_string)
+            # valid_subjects = ('foo', 'bar')
+            # subject, credits = values
+            # if values not in valid_subjects:
+            #     raise ValueError('invalid subject {s!r}'.format(s=subject))
+            # credits = float(credits)
+            # Credits = collections.namedtuple('Credits', 'subject required')
+            # TODO: if invalid raise, when empty skip
+            print('self.dest', self.dest)
+            print(getattr(args, self.dest))
+            # order_by_list
+            # setattr(args, self.dest, ())
+            # print()
+
+    stats_opt.add_argument('--' + Setts.ORDER_BY.key,
+                           help=Setts.ORDER_BY.desc,
+                           metavar='COLUMN_NAME',
+                           choices=list(order_by_args.values()),
+                           action=ValidateOrderBy,
+                           type=str,
+                           nargs='*',
                            )
 
     conn_opt = parser.add_argument_group('Connection Options')
@@ -337,6 +373,7 @@ def configure_argparse(rwd, start_cmd=None):
                           help='Print this help text and exit',
                           )
     args = parser.parse_args(args=start_cmd)
+    pprint(args.__dict__)
     return args, parser
 
 
@@ -405,6 +442,13 @@ class Setts:
     DATE_TO = Option(
         'date_to',
         desc='Exclude logs from this date and later [eg. "2016-07-03"]')
+
+    ORDER_BY = Option(
+        'order_by',
+        # TODO: Import in some sane way.
+        # default='eventId',
+        # TODO: Give 3 column names. Maybe all column names?
+        desc='Order results by one of the column names: [3 column names]')
 
     # Connection settings
     COUCH_STRING = Option(
@@ -515,11 +559,12 @@ class Setts:
                 continue
 
             if cfg_val is None and opt.value is None:
-                # Start
+                # When starting application
                 opt.value = opt.default
             elif cfg_val is None:
                 pass
             else:
+                # When updating settings later
                 opt.value = cfg_val
 
 
