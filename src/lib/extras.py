@@ -58,7 +58,7 @@ class OutputHandler:
         """ List of lines to be written to output. """
         if self._lines is None:
             # print('Output created with settings: "%s"' % Setts.cfg)
-            self._lines = self._prepare_output()
+            self._lines = self.convert_to_string_output()
         return self._lines
 
     def convert_to_string_output(self):
