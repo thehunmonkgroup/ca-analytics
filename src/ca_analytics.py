@@ -6,7 +6,6 @@ import logging
 import os
 import sys
 from os.path import join as j
-
 from lib.database import init_db
 from lib.engine import get_ca_event_list
 from lib.extras import configure_argparse, Setts, OutputHandler
@@ -29,7 +28,12 @@ def evaluate_arguments():
 
     printer = OutputHandler(ca_events_list=event_list)
     if Setts.OUT_DEST.value:
-        printer.write_file(f_path=Setts.OUT_DEST.value)
+        if Setts.OUT_DEST.value.endswith('csv'):
+            printer.write_csv(f_path=Setts.OUT_DEST.value)
+        elif Setts.OUT_DEST.value.endswith('json'):
+            printer.write_json(f_path=Setts.OUT_DEST.value)
+        else:
+            printer.write_file(f_path=Setts.OUT_DEST.value)
     else:
         printer.write_terminal()
 
