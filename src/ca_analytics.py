@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 from os.path import join as j
+from pprint import pprint
 
 from lib.database import init_db
 from lib.engine import get_ca_event_list
@@ -35,11 +36,11 @@ def evaluate_arguments():
 
 
 def main(start_cmd=None):
-    # start_cmd = '-h'.split()
-    start_cmd = '--order_by eventId --order_by dateAndTime --order_by displayName'.split()
+    start_cmd = '-h'.split()
+    # start_cmd = '--order_by eventId --order_by dateAndTime --order_by displayName'.split()
     # TODO: Check how it's behaving with yaml
-    start_cmd = '--order_by eventId dateAndTime '.split()
-    start_cmd = '-u 123 456'.split()
+    start_cmd = '--order_by first_name start_time event_id event_id start_time  event_id'.split()
+    # start_cmd = '-u 123 456'.split()
     args, parser = configure_argparse(rwd=rwd, start_cmd=start_cmd)
     # print(args)
 
@@ -50,11 +51,13 @@ def main(start_cmd=None):
     # Load user args
     Setts.refresh(cfg=args.__dict__)
 
-    init_db()  # TODO: Must it be called?
-    evaluate_arguments()
+    pprint(Setts.cfg)
+
+    # init_db()  # TODO: Must it be called?
+    # evaluate_arguments()
 
 
-version = {'y': 2016, 'm': 12, 'd': 8}
+version = {'y': 2016, 'm': 12, 'd': 13}
 __version__ = '{y}.{m}.{d}'.format(**version)
 
 if __name__ == '__main__':

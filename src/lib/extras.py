@@ -5,6 +5,7 @@ import functools
 import logging
 import os
 import time
+from collections import OrderedDict
 from os.path import join as j
 from pprint import pprint
 
@@ -246,12 +247,6 @@ def configure_argparse(rwd, start_cmd=None):
     )
     """
     # TODO: Move it to inside/get from setts class
-    from lib.database import EventFields
-    from lib.database import MongoFields
-    from lib.database import UserFields
-    order_by_args = {'event_id': MongoFields.EVENT_ID,
-                     'start_time': EventFields.DATE_AND_TIME,
-                     'first_name': UserFields.DISPLAY_NAME}
     parser = argparse.ArgumentParser(
         description='Exports Circle Anywhere analytical information',
         add_help=False,
@@ -260,8 +255,8 @@ def configure_argparse(rwd, start_cmd=None):
                '[-u [USER_ID [USER_ID ...]]] '
                '[--date_from DATE] '
                '[--date_to DATE] '
-               '[--order_by [{event_id}|{start_time}|{first_name}]] '
-               '[CONFIGURATION] [-h]').format(**order_by_args)
+               '[--order_by [{}]] '
+               '[CONFIGURATION] [-h]').format('|'.join(Setts.ORDER_BY.choices))
     )
 
     stats_opt = parser.add_argument_group('Analytics Options')
@@ -313,9 +308,9 @@ def configure_argparse(rwd, start_cmd=None):
 
     stats_opt.add_argument('--' + Setts.ORDER_BY.key,
                            help=Setts.ORDER_BY.desc,
-                           metavar='COLUMN_NAME',
-                           choices=list(order_by_args.values()),
-                           action=ValidateOrderBy,
+                           metavar='SORT_KEY',
+                           choices=list(Setts.ORDER_BY.choices),
+                           # action=ValidateOrderBy,
                            type=str,
                            nargs='*',
                            )
@@ -395,9 +390,16 @@ def timeit(func):
     return newfunc
 
 
+class ClassProperty(property):
+    def __get__(self, cls, owner):
+        return self.fget.__get__(None, owner)()
+
+
 class Setts:
     # If args are validated, the default option should always be set
-    class Option:
+    value = None
+
+    class _Option:
         def __init__(self, key, value=None, default=None, desc='',
                      callback=None):
             """
@@ -420,30 +422,72 @@ class Setts:
         def __str__(self):
             return '"%s": "%s"' % (self.key, self.value)
 
-    class ClassProperty(property):
-        def __get__(self, cls, owner):
-            return self.fget.__get__(None, owner)()
+    class _OrderByOpt(_Option):
+        EVENT_ID = 'event_id'
+        START_TIME = 'start_time'
+        FIRST_NAME = 'first_name'
 
-    # _cfg = {}
+        _value = None
+        _value_original = None
+
+        @property
+        def value(self):
+            return self._value
+
+        @value.setter
+        def value(self, values):
+            if values is not None:
+                # Just for reference and/or debugging
+                type(self)._value_original = values
+                type(self)._value = self._map_fields(values)
+
+        @classmethod
+        def _map_fields(cls, values):
+            """
+            Translates form input args (from file, or cmd) to our DBs column
+              names.
+
+            :param values:
+            :return:
+            """
+            # TODO: Do sth with those circular imports
+            from lib.database import EventFields
+            from lib.database import MongoFields
+            from lib.database import UserFields
+            mapping = {cls.EVENT_ID: MongoFields.EVENT_ID,
+                       cls.START_TIME: EventFields.DATE_AND_TIME,
+                       cls.FIRST_NAME: UserFields.DISPLAY_NAME}
+            # We don't check for existence, cos it should raise ex when wrong
+            #  key was passed
+            sorted_columns = OrderedDict(((mapping[k], k) for k in values))
+            # Way of removing duplicates form list I could quickly think of
+            return tuple(sorted_columns.keys())
+
+        @ClassProperty
+        @classmethod
+        def choices(cls):
+            # TODO: Circular dependencies..
+            return cls.EVENT_ID, cls.START_TIME, cls.FIRST_NAME
+
     # Strings values, can be stored in user.cfg
 
-    EVENT = Option(
+    EVENT = _Option(
         'event',
         desc='Events ids to report')
 
-    USER = Option(
+    USER = _Option(
         'user',
         desc='Users ids to report')
 
-    DATE_FROM = Option(
+    DATE_FROM = _Option(
         'date_from',
         desc='Include logs from this date and later [eg. "2016-07-02"]')
 
-    DATE_TO = Option(
+    DATE_TO = _Option(
         'date_to',
         desc='Exclude logs from this date and later [eg. "2016-07-03"]')
 
-    ORDER_BY = Option(
+    ORDER_BY = _OrderByOpt(
         'order_by',
         # TODO: Import in some sane way.
         # default='eventId',
@@ -451,51 +495,51 @@ class Setts:
         desc='Order results by one of the column names: [3 column names]')
 
     # Connection settings
-    COUCH_STRING = Option(
+    COUCH_STRING = _Option(
         'couchdb_connection_string',
         default='http://127.0.0.1:5984/',
         desc='CouchDB connection string [Default: %(default)s]')
 
-    COUCH_DATABASE = Option(
+    COUCH_DATABASE = _Option(
         'couchdb_database',
         default='circleanywhere',
         desc='Database to be used by CouchDB [Default: %(default)s]')
 
-    MONGO_STRING = Option(
+    MONGO_STRING = _Option(
         'mongodb_connection_string',
         default='mongodb://127.0.0.1:27017',
         desc='MongoDB connection string [Default: %(default)s]')
 
-    MONGO_DATABASE = Option(
+    MONGO_DATABASE = _Option(
         'mongo_database',
         default='circleanywhere',
         desc='Database to be used by MongoDB [Default: %(default)s]')
 
     # Script options
-    OUT_DEST = Option(
+    OUT_DEST = _Option(
         'output_destination',
         desc='File path to where the report should be saved [Default: screen]')
 
-    CFG_PATH = Option(
+    CFG_PATH = _Option(
         'cfg',
         default='%s/ca_analytics.cfg',
         desc='Path to cfg file [Default: "%s/ca_analytics.cfg"]')
 
-    LOG_PATH = Option(
+    LOG_PATH = _Option(
         'log',
         desc='Path to log file')
 
     # Program stuff
     # TODO: Get those as property
-    _DB_MONGO = Option(
+    _DB_MONGO = _Option(
         'db_mongo',
         desc='Reference to our mongoDB')
 
-    _DB_COUCH = Option(
+    _DB_COUCH = _Option(
         'db_couch',
         desc='Reference to our couchDB')
 
-    _details_provider = Option(
+    _details_provider = _Option(
         'info_proxy',
         desc='Proxy to CouchDB from which we get detailed info about events '
              'and users.')
