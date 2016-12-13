@@ -7,7 +7,6 @@ import os
 import time
 from collections import OrderedDict
 from os.path import join as j
-from pprint import pprint
 
 import ruamel.yaml as yaml
 
@@ -288,29 +287,10 @@ def configure_argparse(rwd, start_cmd=None):
                            type=str,
                            )
 
-    class ValidateOrderBy(argparse.Action):
-        def __call__(self, parser, args, values, option_string=None):
-            print('args', args)
-            print('values', values)
-            print('option_string', option_string)
-            # valid_subjects = ('foo', 'bar')
-            # subject, credits = values
-            # if values not in valid_subjects:
-            #     raise ValueError('invalid subject {s!r}'.format(s=subject))
-            # credits = float(credits)
-            # Credits = collections.namedtuple('Credits', 'subject required')
-            # TODO: if invalid raise, when empty skip
-            print('self.dest', self.dest)
-            print(getattr(args, self.dest))
-            # order_by_list
-            # setattr(args, self.dest, ())
-            # print()
-
     stats_opt.add_argument('--' + Setts.ORDER_BY.key,
                            help=Setts.ORDER_BY.desc,
                            metavar='SORT_KEY',
                            choices=list(Setts.ORDER_BY.choices),
-                           # action=ValidateOrderBy,
                            type=str,
                            nargs='*',
                            )
@@ -368,7 +348,7 @@ def configure_argparse(rwd, start_cmd=None):
                           help='Print this help text and exit',
                           )
     args = parser.parse_args(args=start_cmd)
-    pprint(args.__dict__)
+    # pprint(args.__dict__)
     return args, parser
 
 
