@@ -473,8 +473,7 @@ class Setts:
 
     ORDER_BY = _OrderByOpt(
         'order_by',
-        # TODO: Import in some sane way.
-        # default='eventId',
+        # default='first_name',
         # TODO: Give 3 column names. Maybe all column names?
         desc='Order results by one of the column names: [3 column names]')
 

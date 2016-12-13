@@ -1,5 +1,6 @@
 import logging
 
+from lib.database import EventFields
 from lib.database import MongoFields
 from lib.event import CaEvent
 from lib.extras import Setts
@@ -36,4 +37,18 @@ def get_ca_event_list(selected_logs):
 
     Setts.details_provider.get_details_from_db()
 
-    return list(ca_events_holder.values())
+    return sort_output_events(ca_events_holder.values())
+
+
+def sort_output_events(event_list):
+    if Setts.ORDER_BY.value is not None:
+        sorting_keys = tuple(k for k in Setts.ORDER_BY.value
+                             if k in (MongoFields.EVENT_ID,
+                                      EventFields.DATE_AND_TIME,))
+    else:
+        sorting_keys = (EventFields.DATE_AND_TIME, )
+    # return event_list
+    # TODO: Sort it somehow
+    for x in event_list:
+        print(x)
+    return sorted(event_list, key=lambda x: sorting_keys[:])

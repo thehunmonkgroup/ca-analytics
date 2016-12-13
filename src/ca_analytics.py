@@ -27,6 +27,7 @@ def evaluate_arguments():
                                                 date_to=Setts.DATE_TO.value)
 
     event_list = get_ca_event_list(selected_logs=db_data)
+    pprint(event_list)
 
     # printer = OutputHandler(ca_events_list=event_list)
     # if Setts.OUT_DEST.value:
@@ -36,10 +37,10 @@ def evaluate_arguments():
 
 
 def main(start_cmd=None):
-    start_cmd = '-h'.split()
+    # start_cmd = '-h'.split()
     # start_cmd = '--order_by eventId --order_by dateAndTime --order_by displayName'.split()
     # TODO: Check how it's behaving with yaml
-    start_cmd = '--order_by first_name start_time join_date event_id event_id start_time  event_id'.split()
+    # start_cmd = '--order_by first_name start_time join_date event_id event_id start_time  event_id'.split()
     # start_cmd = '-u 123 456'.split()
     args, parser = configure_argparse(rwd=rwd, start_cmd=start_cmd)
     # print(args)
@@ -51,10 +52,10 @@ def main(start_cmd=None):
     # Load user args
     Setts.refresh(cfg=args.__dict__)
 
-    pprint(Setts.cfg)
+    # pprint(Setts.cfg)
 
-    # init_db()  # TODO: Must it be called?
-    # evaluate_arguments()
+    init_db()  # TODO: Must it be called?
+    evaluate_arguments()
 
 
 version = {'y': 2016, 'm': 12, 'd': 13}
@@ -62,6 +63,7 @@ __version__ = '{y}.{m}.{d}'.format(**version)
 
 if __name__ == '__main__':
     # TODO: Decorator for properties, when _field is not None return earlier
+    # TODO: lib/engine.py:51
     try:
         main()
     except Exception as e:
