@@ -39,7 +39,7 @@ def main(start_cmd=None):
     start_cmd = '-h'.split()
     # start_cmd = '--order_by eventId --order_by dateAndTime --order_by displayName'.split()
     # TODO: Check how it's behaving with yaml
-    start_cmd = '--order_by first_name start_time event_id event_id start_time  event_id'.split()
+    start_cmd = '--order_by first_name start_time join_date event_id event_id start_time  event_id'.split()
     # start_cmd = '-u 123 456'.split()
     args, parser = configure_argparse(rwd=rwd, start_cmd=start_cmd)
     # print(args)

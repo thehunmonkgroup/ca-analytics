@@ -406,6 +406,7 @@ class Setts:
         EVENT_ID = 'event_id'
         START_TIME = 'start_time'
         FIRST_NAME = 'first_name'
+        JOIN_DATE = 'join_date'
 
         _value = None
         _value_original = None
@@ -434,9 +435,12 @@ class Setts:
             from lib.database import EventFields
             from lib.database import MongoFields
             from lib.database import UserFields
+            # If it'll be requested to sort also by leave date, it'll be
+            #  challenge. We'll need to differentiate btwn join/leave timestamp
             mapping = {cls.EVENT_ID: MongoFields.EVENT_ID,
                        cls.START_TIME: EventFields.DATE_AND_TIME,
-                       cls.FIRST_NAME: UserFields.DISPLAY_NAME}
+                       cls.FIRST_NAME: UserFields.DISPLAY_NAME,
+                       cls.JOIN_DATE: MongoFields.TIMESTAMP}
             # We don't check for existence, cos it should raise ex when wrong
             #  key was passed
             sorted_columns = OrderedDict(((mapping[k], k) for k in values))
@@ -447,7 +451,7 @@ class Setts:
         @classmethod
         def choices(cls):
             # TODO: Circular dependencies..
-            return cls.EVENT_ID, cls.START_TIME, cls.FIRST_NAME
+            return cls.EVENT_ID, cls.START_TIME, cls.FIRST_NAME, cls.JOIN_DATE
 
     # Strings values, can be stored in user.cfg
 
