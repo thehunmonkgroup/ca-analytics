@@ -29,11 +29,16 @@ def evaluate_arguments():
     event_list = get_ca_event_list(selected_logs=db_data)
     pprint(event_list)
 
-    # printer = OutputHandler(ca_events_list=event_list)
-    # if Setts.OUT_DEST.value:
-    #     printer.write_file(f_path=Setts.OUT_DEST.value)
-    # else:
-    #     printer.write_terminal()
+    printer = OutputHandler(ca_events_list=event_list)
+    if Setts.OUT_DEST.value:
+        if Setts.OUT_DEST.value.endswith('csv'):
+            printer.write_csv(f_path=Setts.OUT_DEST.value)
+        elif Setts.OUT_DEST.value.endswith('json'):
+            printer.write_json(f_path=Setts.OUT_DEST.value)
+        else:
+            printer.write_file(f_path=Setts.OUT_DEST.value)
+    else:
+        printer.write_terminal()
 
 
 def main(start_cmd=None):
