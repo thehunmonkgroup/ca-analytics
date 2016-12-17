@@ -27,26 +27,30 @@ def evaluate_arguments():
                                                 date_to=Setts.DATE_TO.value)
 
     event_list = get_ca_event_list(selected_logs=db_data)
+    print('='*100)
     pprint(event_list)
 
-    printer = OutputHandler(ca_events_list=event_list)
-    if Setts.OUT_DEST.value:
-        if Setts.OUT_DEST.value.endswith('csv'):
-            printer.write_csv(f_path=Setts.OUT_DEST.value)
-        elif Setts.OUT_DEST.value.endswith('json'):
-            printer.write_json(f_path=Setts.OUT_DEST.value)
-        else:
-            printer.write_file(f_path=Setts.OUT_DEST.value)
-    else:
-        printer.write_terminal()
+    # printer = OutputHandler(ca_events_list=event_list)
+    # if Setts.OUT_DEST.value:
+    #     if Setts.OUT_DEST.value.endswith('csv'):
+    #         printer.write_csv(f_path=Setts.OUT_DEST.value)
+    #     elif Setts.OUT_DEST.value.endswith('json'):
+    #         printer.write_json(f_path=Setts.OUT_DEST.value)
+    #     else:
+    #         printer.write_file(f_path=Setts.OUT_DEST.value)
+    # else:
+    #     printer.write_terminal()
 
 
 def main(start_cmd=None):
     # start_cmd = '-h'.split()
     # start_cmd = '--order_by eventId --order_by dateAndTime --order_by displayName'.split()
     # TODO: Check how it's behaving with yaml
-    # start_cmd = '--order_by first_name start_time join_date event_id event_id start_time  event_id'.split()
+    start_cmd = '--order_by display_name start_time join_date event_id event_id start_time  event_id'.split()
     # start_cmd = '-u 123 456'.split()
+    # start_cmd += ['-e'] + list(map(str, range(470, 800)))
+    # Events with 12 participants
+    start_cmd += '-e 274 305 313 349 363 376 384 399 412 441 445 479 488 489'.split()
     args, parser = configure_argparse(rwd=rwd, start_cmd=start_cmd)
     # print(args)
 
