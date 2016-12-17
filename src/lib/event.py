@@ -152,6 +152,10 @@ class CaEvent:
     def event_participants(self, sort_by=None):
         return self._event_participants.unique
 
+    @property
+    def participants_number(self):
+        return len(self.event_participants())
+
     @classmethod
     def _get_log_handler(cls, exception_key):
         """
@@ -179,5 +183,5 @@ class CaEvent:
 
     def __repr__(self):
         txt = 'eventId [%s] users_count [%s] time [%s]-[%s] description [%s]'
-        return txt % (self.event_id, len(self.event_participants()),
+        return txt % (self.event_id, self.participants_number,
                       self.start_time_str, self.end_time_str, self.description)
