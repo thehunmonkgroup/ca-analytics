@@ -5,6 +5,7 @@ import errno
 import functools
 import json
 import logging
+import operator
 import os
 import time
 from collections import OrderedDict
@@ -88,13 +89,17 @@ class OutputHandler:
         f_path = norm_path(f_path, mkfile=False, mkdir=False)
 
         def create_writer(f, fieldnames):
-            writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES, extrasaction='ignore', quoting=csv.QUOTE_NONNUMERIC)
+            writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES,
+                                    extrasaction='ignore',
+                                    quoting=csv.QUOTE_NONNUMERIC)
             writer.writeheader()
             return writer
 
         with open(f_path, 'w') as f:
             print('* Exporting as: "%s"' % f_path)
-            writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES, extrasaction='ignore', quoting=csv.QUOTE_NONNUMERIC)
+            writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES,
+                                    extrasaction='ignore',
+                                    quoting=csv.QUOTE_NONNUMERIC)
             writer.writeheader()
             for each_ca_event in self._ca_events_list:
                 event_dict = self.convert_to_dictionary(each_ca_event)
@@ -118,9 +123,12 @@ class OutputHandler:
 
     @classmethod
     def convert_to_dictionary(cls, event):
-        out = {'Event ID': event.event_id, 'Description': event.description, 'Calendar ID': event.calendar_id,
-               'Start time': event.start_time_str, 'End time': event.end_time_str}
-        users = [{'User ID': user.user_id, 'User name': user.display_name, 'Joined': user.timestamp_str}
+        out = {'Event ID': event.event_id, 'Description': event.description,
+               'Calendar ID': event.calendar_id,
+               'Start time': event.start_time_str,
+               'End time': event.end_time_str}
+        users = [{'User ID': user.user_id, 'User name': user.display_name,
+                  'Joined': user.timestamp_str}
                  for user in event.event_participants()]
         out['Users'] = users
         return out
@@ -449,55 +457,74 @@ class Setts:
             return '"%s": "%s"' % (self.key, self.value)
 
     class _OrderByOpt(_Option):
+        # Available argument names to pass to the program for sorting
+        # Events
         EVENT_ID = 'event_id'
         START_TIME = 'start_time'
-        FIRST_NAME = 'first_name'
+        # Users
+        DISPLAY_NAME = 'display_name'
         JOIN_DATE = 'join_date'
 
-        _value = None
-        _value_original = None
+        # Properties name of the CaEvent and CaParticipants class
+        # Events
+        OUR_EVENT_ID = EVENT_ID
+        OUR_START_TIME = START_TIME
+        # Users
+        OUR_DISPLAY_NAME = 'dummy_first_name'
+        OUR_JOIN_DATE = 'dummy_join_date'
+
+        _ORDER_BY_KEY_MAPPING = {EVENT_ID: OUR_EVENT_ID,
+                                 START_TIME: OUR_START_TIME,
+                                 DISPLAY_NAME: OUR_DISPLAY_NAME,
+                                 JOIN_DATE: OUR_JOIN_DATE}
+
+        _our_user_args = None
+        _user_original_args = None
 
         @property
         def value(self):
-            return self._value
+            return self._our_user_args
 
         @value.setter
         def value(self, values):
             if values is not None:
-                # Just for reference and/or debugging
-                type(self)._value_original = values
-                type(self)._value = self._map_fields(values)
+                # Just for reference and debugging
+                type(self)._user_original_args = values
+                type(self)._our_user_args = self._map_fields(values)
+            else:  # Set default
+                type(self)._our_user_args = (self.OUR_EVENT_ID,
+                                             self.OUR_DISPLAY_NAME)
+
+        @property
+        def event_sort_keys(self):
+            """ Returns attrgetter to sort events by those attr. """
+            event_properties_name_to_sort_by = tuple(
+                self._ORDER_BY_KEY_MAPPING[k] for k in self.value
+                if k in (self.OUR_EVENT_ID, self.OUR_START_TIME)
+            )
+            return operator.attrgetter(*event_properties_name_to_sort_by)
 
         @classmethod
         def _map_fields(cls, values):
             """
-            Translates form input args (from file, or cmd) to our DBs column
-              names.
+            Translates form input args (from file, or cmd) to our properties
+              on CaEvent and CaParticipants to sort by them.
 
             :param values:
             :return:
             """
-            # TODO: Do sth with those circular imports
-            from lib.database import EventFields
-            from lib.database import MongoFields
-            from lib.database import UserFields
-            # If it'll be requested to sort also by leave date, it'll be
-            #  challenge. We'll need to differentiate btwn join/leave timestamp
-            mapping = {cls.EVENT_ID: MongoFields.EVENT_ID,
-                       cls.START_TIME: EventFields.DATE_AND_TIME,
-                       cls.FIRST_NAME: UserFields.DISPLAY_NAME,
-                       cls.JOIN_DATE: MongoFields.TIMESTAMP}
-            # We don't check for existence, cos it should raise ex when wrong
-            #  key was passed
-            sorted_columns = OrderedDict(((mapping[k], k) for k in values))
+            # Here all the dict values should be present. Ex will be raised by
+            #   argparser
+            sorted_columns = OrderedDict(
+                ((cls._ORDER_BY_KEY_MAPPING[k], k) for k in values)
+            )
             # Way of removing duplicates form list I could quickly think of
             return tuple(sorted_columns.keys())
 
         @ClassProperty
         @classmethod
         def choices(cls):
-            # TODO: Circular dependencies..
-            return cls.EVENT_ID, cls.START_TIME, cls.FIRST_NAME, cls.JOIN_DATE
+            return tuple(cls._ORDER_BY_KEY_MAPPING.keys())
 
     # Strings values, can be stored in user.cfg
 
