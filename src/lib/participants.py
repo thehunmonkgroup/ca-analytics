@@ -1,4 +1,5 @@
 import logging
+from pprint import pprint
 
 import dateutil.parser
 
@@ -124,7 +125,8 @@ class CaParticipant:
         return self._str_representation_templ % data_for_templ
 
     def __repr__(self):
-        return 'userId [%s]@[%s]' % (self.user_id, self.timestamp_str)
+        return 'user [%s]@[%s] name [%s]' % (self.user_id, self.timestamp_str,
+                                            self.display_name)
 
 
 class CaUserOld:
@@ -300,16 +302,17 @@ class ParticipantsHandler:
             log.warning('Accessing uninitialized user list')
             return []
         else:
+            print(Setts.ORDER_BY.participant_sort_keys)
             all_sorted = sorted(self._participant_list,
                                 key=Setts.ORDER_BY.participant_sort_keys)
-            print(all_sorted)
-            print()
+            pprint(all_sorted)
             # Earliest date is returned, cos the first object in set is
             # retained.
             # As it happens with logs-earliest date comes first. And this is
             # the object that is retained in set. The rest (later mentions of
             # user connecting to the event) is disposed. Can we relay on it?
-            return sorted(set(self._participant_list))
+            return sorted(set(all_sorted),
+                          key=Setts.ORDER_BY.participant_sort_keys)
 
     @property
     def unique_ids(self):
