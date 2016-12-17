@@ -300,6 +300,10 @@ class ParticipantsHandler:
             log.warning('Accessing uninitialized user list')
             return []
         else:
+            all_sorted = sorted(self._participant_list,
+                                key=Setts.ORDER_BY.participant_sort_keys)
+            print(all_sorted)
+            print()
             # Earliest date is returned, cos the first object in set is
             # retained.
             # As it happens with logs-earliest date comes first. And this is

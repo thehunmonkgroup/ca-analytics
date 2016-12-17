@@ -463,20 +463,20 @@ class Setts:
         START_TIME = 'start_time'
         # Users
         DISPLAY_NAME = 'display_name'
-        JOIN_DATE = 'join_date'
+        JOIN_TIME = 'join_time'
 
         # Properties name of the CaEvent and CaParticipants class
         # Events
         OUR_EVENT_ID = EVENT_ID
         OUR_START_TIME = START_TIME
         # Users
-        OUR_DISPLAY_NAME = 'dummy_first_name'
-        OUR_JOIN_DATE = 'dummy_join_date'
+        OUR_DISPLAY_NAME = 'display_name'
+        OUR_JOIN_TIME = 'timestamp'
 
         _ORDER_BY_KEY_MAPPING = {EVENT_ID: OUR_EVENT_ID,
                                  START_TIME: OUR_START_TIME,
                                  DISPLAY_NAME: OUR_DISPLAY_NAME,
-                                 JOIN_DATE: OUR_JOIN_DATE}
+                                 JOIN_TIME: OUR_JOIN_TIME}
 
         _our_user_args = None
         _user_original_args = None
@@ -499,10 +499,19 @@ class Setts:
         def event_sort_keys(self):
             """ Returns attrgetter to sort events by those attr. """
             event_properties_name_to_sort_by = tuple(
-                self._ORDER_BY_KEY_MAPPING[k] for k in self.value
+                k for k in self.value
                 if k in (self.OUR_EVENT_ID, self.OUR_START_TIME)
             )
             return operator.attrgetter(*event_properties_name_to_sort_by)
+
+        @property
+        def participant_sort_keys(self):
+            """ Returns attrgetter to sort participant by those attr. """
+            participant_properties_name_to_sort_by = tuple(
+                k for k in self.value
+                if k in (self.OUR_DISPLAY_NAME, self.OUR_JOIN_TIME)
+            )
+            return operator.attrgetter(*participant_properties_name_to_sort_by)
 
         @classmethod
         def _map_fields(cls, values):
