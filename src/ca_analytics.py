@@ -26,8 +26,6 @@ def evaluate_arguments():
                                                 date_to=Setts.DATE_TO.value)
 
     event_list = get_ca_event_list(selected_logs=db_data)
-    # print('='*100)
-    # pprint(event_list)
 
     printer = OutputHandler(ca_events_list=event_list)
     if Setts.OUT_DEST.value:

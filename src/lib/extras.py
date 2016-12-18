@@ -402,7 +402,6 @@ def configure_argparse(rwd, start_cmd=None):
                           help='Print this help text and exit',
                           )
     args = parser.parse_args(args=start_cmd)
-    # pprint(args.__dict__)
     return args, parser
 
 
