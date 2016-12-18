@@ -1,5 +1,4 @@
 import logging
-from pprint import pprint
 
 import dateutil.parser
 
@@ -126,155 +125,7 @@ class CaParticipant:
 
     def __repr__(self):
         return 'user [%s]@[%s] name [%s]' % (self.user_id, self.timestamp_str,
-                                            self.display_name)
-
-
-class CaUserOld:
-    display_name = None
-
-    _user_id = None
-    _timestamp = None
-    _timestamp_str = None
-
-    _mongo_raw_data = None
-    _couch_raw_data = None
-
-    # TODO: Proper error handling
-    _error_msg_change = (
-        'Tried to change [%s] of the user [%s]! [%s]->[%s]. '
-        'This should never happen. Statistics may be corrupted.'
-    )
-    _str_representation_templ = 'User: [%s] - [%s], Joined: [%s]'
-
-    def __init__(self, log_entry):
-        """
-        {'_id': ObjectId('57a3a39a00c88030ca45cddb'),
-          'action': 'join',
-          'connectedUsers': 0,
-          'eventId': 523,
-          'level': 'info',
-          'message': 'events',
-          'timestamp': '2016-07-02T20:35:40.896Z',
-          'userId': '108333970581946079744'}
-        :param log_entry:
-        """
-        self.user_id = log_entry['userId']
-        self.timestamp = log_entry['timestamp']
-
-        self._mongo_raw_data = log_entry
-
-    @property
-    def user_id(self):
-        return self._user_id
-
-    @user_id.setter
-    def user_id(self, value):
-        """ Sets EventId for this class. """
-        value = int(value)
-        if self._user_id is None:
-            self._user_id = value
-        elif self._user_id != value:
-            log.error(self._error_msg_change,
-                      'user_id', self.user_id, self._user_id, value)
-
-    @property
-    def timestamp(self):
-        return self._timestamp
-
-    @timestamp.setter
-    def timestamp(self, value):
-        """ '2016-07-02T20:35:40.896Z' """
-        self._timestamp_str = str(value)
-        value = dateutil.parser.parse(value)
-
-        if self._timestamp is None:
-            self._timestamp = value
-        elif self._timestamp != value:
-            log.error(self._error_msg_change,
-                      'timestamp', self.user_id, self._timestamp, value)
-
-    @property
-    def couch_data(self):
-        # TODO: check if it can be copied
-        if self._couch_raw_data is not None:
-            return self._couch_raw_data.copy()
-        else:
-            return self._couch_raw_data
-
-    @couch_data.setter
-    def couch_data(self, value):
-        """
-           {'perms': {'joinEvents': True},
-           'name': {'givenName': 'V', 'familyName': 'Bnt'},
-           'displayName': 'V Bt',
-           'preferredContact': {},
-           'admin': False,
-           'id': '1001433634',
-           'link': 'https://plus.62434483634',
-           'networkList': {'391': ['1165647'],
-                           '417': ['10692356718'],
-                           '471': ['116485647'],
-                           '427': ['11034']},
-           'google_json': {'locale': 'en',
-                           'name': 'Vnt',
-                           'gender': 'female',
-                           'given_name': 'V',
-                           'email': 'v@gmail.com',
-                           'family_name': 'B',
-                           'picture': 'https://lh5.content.com/-KJAEs/kE/photo.jpg',
-                           'id': '10034',
-                           'link': 'https://plus.google.com/1034',
-                           'verified_email': True},
-           'isPlusUser': True,
-           '_rev': '60-3f9676bd925d1d5e35d7cbec75da8d90',
-           'picture': 'https://content.com/-KJkE/photo.jpg',
-           'superuser': False,
-           '_id': 'user/1034',
-           'provider': 'google',
-           'createdViaHangout': False,
-           'emails': [{'value': 'vt@gmail.com'}]}
-        """
-        self._couch_raw_data = value
-        self.display_name = value['displayName']
-
-    def set_missing(self):
-        log.warning('Usr [%s] - setting missing (TODO)', self.user_id)
-        # TODO: Set missing for CouchDB (this should not happen often)
-
-    def __hash__(self):
-        return hash(self.user_id)
-        ## Show all users
-        # return (hash(self.user_id) ^
-        #         hash(self._timestamp_str))
-
-    def __eq__(self, other):
-        return other.user_id == self.user_id
-        ## Show all users
-        # if other.user_id != self.user_id:
-        #     return other.user_id < self.user_id
-        # elif other.timestamp == self.timestamp:  # All equal!
-        #     return other.timestamp == self.timestamp
-        # else:  # Same id, compare based on timestampe
-        #     return other.timestamp < self.timestamp
-
-    def __gt__(self, other):
-        ## Sort by id
-        # return other.user_id < self.user_id
-        ## Sort by time entered
-        return other.timestamp < self.timestamp
-        ## Sort by id & time one hopped in
-        # if other.user_id == self.user_id:
-        #     return other.timestamp < self.timestamp
-        # else:
-        #     return other.user_id < self.user_id
-
-    def __str__(self):
-        data_for_templ = (self.user_id, self.display_name,
-                          self.timestamp.strftime(STRFTIME_FORMAT))
-        return self._str_representation_templ % data_for_templ
-
-    def __repr__(self):
-        return 'userId [%s]@[%s]' % (self.user_id, self.timestamp)
+                                             self.display_name)
 
 
 class ParticipantsHandler:
@@ -302,15 +153,11 @@ class ParticipantsHandler:
             log.warning('Accessing uninitialized user list')
             return []
         else:
-            print(Setts.ORDER_BY.participant_sort_keys)
+            # Sort two times. First so that set() will memorize first correct
+            #   object. Second cos set() is not preserving order.
             all_sorted = sorted(self._participant_list,
                                 key=Setts.ORDER_BY.participant_sort_keys)
-            pprint(all_sorted)
-            # Earliest date is returned, cos the first object in set is
-            # retained.
-            # As it happens with logs-earliest date comes first. And this is
-            # the object that is retained in set. The rest (later mentions of
-            # user connecting to the event) is disposed. Can we relay on it?
+            # Dispose of all redundant participant logs, but leave first
             return sorted(set(all_sorted),
                           key=Setts.ORDER_BY.participant_sort_keys)
 

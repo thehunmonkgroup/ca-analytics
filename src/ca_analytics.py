@@ -6,7 +6,6 @@ import logging
 import os
 import sys
 from os.path import join as j
-from pprint import pprint
 
 from lib.database import init_db
 from lib.engine import get_ca_event_list
@@ -43,18 +42,7 @@ def evaluate_arguments():
 
 
 def main(start_cmd=None):
-    # start_cmd = '-h'.split()
-    # start_cmd = '--order_by eventId --order_by dateAndTime --order_by displayName'.split()
-    # TODO: Check how it's behaving with yaml
-    start_cmd = '--order_by display_name start_time join_time event_id event_id start_time  event_id'.split()
-    # start_cmd += '-u 109822325191351771849'.split()
-    start_cmd += '-e 308'.split()
-
-    # start_cmd += ['-e'] + list(map(str, range(470, 800)))
-    # Events with 12 participants
-    # start_cmd += '-e 274 305 313 349 363 376 384 399 412 441 445 479 488 489'.split()
     args, parser = configure_argparse(rwd=rwd, start_cmd=start_cmd)
-    # print(args)
 
     # Load default cfg
     Setts.refresh(f_pth=j(rwd, Setts.CFG_PATH.value))
@@ -63,18 +51,15 @@ def main(start_cmd=None):
     # Load user args
     Setts.refresh(cfg=args.__dict__)
 
-    # pprint(Setts.cfg)
-
     init_db()  # TODO: Must it be called?
     evaluate_arguments()
 
 
-version = {'y': 2016, 'm': 12, 'd': 13}
+version = {'y': 2016, 'm': 12, 'd': 18}
 __version__ = '{y}.{m}.{d}'.format(**version)
 
 if __name__ == '__main__':
     # TODO: Decorator for properties, when _field is not None return earlier
-    # TODO: lib/engine.py:51
     try:
         main()
     except Exception as e:

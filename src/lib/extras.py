@@ -487,13 +487,27 @@ class Setts:
 
         @value.setter
         def value(self, values):
-            if values is not None:
-                # Just for reference and debugging
-                type(self)._user_original_args = values
-                type(self)._our_user_args = self._map_fields(values)
-            else:  # Set default
-                type(self)._our_user_args = (self.OUR_EVENT_ID,
-                                             self.OUR_DISPLAY_NAME)
+            def set_default_sorting_keys(values):
+                if values is None:
+                    values = tuple()
+
+                if not any(usr_key in values
+                           for usr_key in (self.EVENT_ID, self.START_TIME)):
+                    log.debug('Adding default sorting value for event [%s]',
+                              self.EVENT_ID)
+                    values += (self.EVENT_ID,)
+
+                if not any(usr_key in values
+                           for usr_key in (self.DISPLAY_NAME, self.JOIN_TIME)):
+                    log.debug('Adding default sorting value for user [%s]',
+                              self.DISPLAY_NAME)
+                    values += (self.DISPLAY_NAME,)
+                return values
+
+            values = set_default_sorting_keys(values)
+
+            type(self)._user_original_args = values
+            type(self)._our_user_args = self._map_fields(values)
 
         @property
         def event_sort_keys(self):
@@ -522,11 +536,15 @@ class Setts:
             :param values:
             :return:
             """
-            # Here all the dict values should be present. Ex will be raised by
-            #   argparser
-            sorted_columns = OrderedDict(
-                ((cls._ORDER_BY_KEY_MAPPING[k], k) for k in values)
-            )
+
+            try:
+                sorted_columns = OrderedDict(
+                    ((cls._ORDER_BY_KEY_MAPPING[k], k) for k in values)
+                )
+            except KeyError as e:
+                error_msg = ('Unrecognized order_by key, '
+                             'got [{}]. Valid {}'.format(e, cls.choices))
+                raise RuntimeError(error_msg) from None
             # Way of removing duplicates form list I could quickly think of
             return tuple(sorted_columns.keys())
 
