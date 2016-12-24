@@ -5,8 +5,10 @@ import errno
 import functools
 import json
 import logging
+import operator
 import os
 import time
+from collections import OrderedDict
 from os.path import join as j
 
 import ruamel.yaml as yaml
@@ -87,13 +89,17 @@ class OutputHandler:
         f_path = norm_path(f_path, mkfile=False, mkdir=False)
 
         def create_writer(f, fieldnames):
-            writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES, extrasaction='ignore', quoting=csv.QUOTE_NONNUMERIC)
+            writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES,
+                                    extrasaction='ignore',
+                                    quoting=csv.QUOTE_NONNUMERIC)
             writer.writeheader()
             return writer
 
         with open(f_path, 'w') as f:
             print('* Exporting as: "%s"' % f_path)
-            writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES, extrasaction='ignore', quoting=csv.QUOTE_NONNUMERIC)
+            writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES,
+                                    extrasaction='ignore',
+                                    quoting=csv.QUOTE_NONNUMERIC)
             writer.writeheader()
             for each_ca_event in self._ca_events_list:
                 event_dict = self.convert_to_dictionary(each_ca_event)
@@ -117,9 +123,12 @@ class OutputHandler:
 
     @classmethod
     def convert_to_dictionary(cls, event):
-        out = {'Event ID': event.event_id, 'Description': event.description, 'Calendar ID': event.calendar_id,
-               'Start time': event.start_time_str, 'End time': event.end_time_str}
-        users = [{'User ID': user.user_id, 'User name': user.display_name, 'Joined': user.timestamp_str}
+        out = {'Event ID': event.event_id, 'Description': event.description,
+               'Calendar ID': event.calendar_id,
+               'Start time': event.start_time_str,
+               'End time': event.end_time_str}
+        users = [{'User ID': user.user_id, 'User name': user.display_name,
+                  'Joined': user.timestamp_str}
                  for user in event.event_participants()]
         out['Users'] = users
         return out
@@ -281,6 +290,7 @@ def configure_argparse(rwd, start_cmd=None):
         couchdb_database=None,
         date_from=None,
         date_to=None,
+        order_by: eventId,
         event=None,
         log=None,
         mongo_database=None,
@@ -289,7 +299,7 @@ def configure_argparse(rwd, start_cmd=None):
         user=None
     )
     """
-
+    # TODO: Move it to inside/get from setts class
     parser = argparse.ArgumentParser(
         description='Exports Circle Anywhere analytical information',
         add_help=False,
@@ -298,7 +308,8 @@ def configure_argparse(rwd, start_cmd=None):
                '[-u [USER_ID [USER_ID ...]]] '
                '[--date_from DATE] '
                '[--date_to DATE] '
-               '[CONFIGURATION] [-h]')
+               '[--order_by [{}]] '
+               '[CONFIGURATION] [-h]').format('|'.join(Setts.ORDER_BY.choices))
     )
 
     stats_opt = parser.add_argument_group('Analytics Options')
@@ -328,6 +339,14 @@ def configure_argparse(rwd, start_cmd=None):
                            help=Setts.DATE_TO.desc,
                            metavar='DATE',
                            type=str,
+                           )
+
+    stats_opt.add_argument('--' + Setts.ORDER_BY.key,
+                           help=Setts.ORDER_BY.desc,
+                           metavar='SORT_KEY',
+                           choices=list(Setts.ORDER_BY.choices),
+                           type=str,
+                           nargs='*',
                            )
 
     conn_opt = parser.add_argument_group('Connection Options')
@@ -404,9 +423,16 @@ def timeit(func):
     return newfunc
 
 
+class ClassProperty(property):
+    def __get__(self, cls, owner):
+        return self.fget.__get__(None, owner)()
+
+
 class Setts:
     # If args are validated, the default option should always be set
-    class Option:
+    value = None
+
+    class _Option:
         def __init__(self, key, value=None, default=None, desc='',
                      callback=None):
             """
@@ -429,75 +455,173 @@ class Setts:
         def __str__(self):
             return '"%s": "%s"' % (self.key, self.value)
 
-    class ClassProperty(property):
-        def __get__(self, cls, owner):
-            return self.fget.__get__(None, owner)()
+    class _OrderByOpt(_Option):
+        # Available argument names to pass to the program for sorting
+        # Events
+        EVENT_ID = 'event_id'
+        START_TIME = 'start_time'
+        # Users
+        DISPLAY_NAME = 'display_name'
+        JOIN_TIME = 'join_time'
 
-    # _cfg = {}
+        # Properties name of the CaEvent and CaParticipants class
+        # Events
+        OUR_EVENT_ID = EVENT_ID
+        OUR_START_TIME = START_TIME
+        # Users
+        OUR_DISPLAY_NAME = 'display_name'
+        OUR_JOIN_TIME = 'timestamp'
+
+        _ORDER_BY_KEY_MAPPING = {EVENT_ID: OUR_EVENT_ID,
+                                 START_TIME: OUR_START_TIME,
+                                 DISPLAY_NAME: OUR_DISPLAY_NAME,
+                                 JOIN_TIME: OUR_JOIN_TIME}
+
+        _our_user_args = None
+        _user_original_args = None
+
+        @property
+        def value(self):
+            return self._our_user_args
+
+        @value.setter
+        def value(self, values):
+            def set_default_sorting_keys(values):
+                if values is None:
+                    values = tuple()
+
+                if not any(usr_key in values
+                           for usr_key in (self.EVENT_ID, self.START_TIME)):
+                    log.debug('Adding default sorting value for event [%s]',
+                              self.EVENT_ID)
+                    values += (self.EVENT_ID,)
+
+                if not any(usr_key in values
+                           for usr_key in (self.DISPLAY_NAME, self.JOIN_TIME)):
+                    log.debug('Adding default sorting value for user [%s]',
+                              self.DISPLAY_NAME)
+                    values += (self.DISPLAY_NAME,)
+                return values
+
+            values = set_default_sorting_keys(values)
+
+            type(self)._user_original_args = values
+            type(self)._our_user_args = self._map_fields(values)
+
+        @property
+        def event_sort_keys(self):
+            """ Returns attrgetter to sort events by those attr. """
+            event_properties_name_to_sort_by = tuple(
+                k for k in self.value
+                if k in (self.OUR_EVENT_ID, self.OUR_START_TIME)
+            )
+            return operator.attrgetter(*event_properties_name_to_sort_by)
+
+        @property
+        def participant_sort_keys(self):
+            """ Returns attrgetter to sort participant by those attr. """
+            participant_properties_name_to_sort_by = tuple(
+                k for k in self.value
+                if k in (self.OUR_DISPLAY_NAME, self.OUR_JOIN_TIME)
+            )
+            return operator.attrgetter(*participant_properties_name_to_sort_by)
+
+        @classmethod
+        def _map_fields(cls, values):
+            """
+            Translates form input args (from file, or cmd) to our properties
+              on CaEvent and CaParticipants to sort by them.
+
+            :param values:
+            :return:
+            """
+
+            try:
+                sorted_columns = OrderedDict(
+                    ((cls._ORDER_BY_KEY_MAPPING[k], k) for k in values)
+                )
+            except KeyError as e:
+                error_msg = ('Unrecognized order_by key, '
+                             'got [{}]. Valid {}'.format(e, cls.choices))
+                raise RuntimeError(error_msg) from None
+            # Way of removing duplicates form list I could quickly think of
+            return tuple(sorted_columns.keys())
+
+        @ClassProperty
+        @classmethod
+        def choices(cls):
+            return tuple(cls._ORDER_BY_KEY_MAPPING.keys())
+
     # Strings values, can be stored in user.cfg
 
-    EVENT = Option(
+    EVENT = _Option(
         'event',
         desc='Events ids to report')
 
-    USER = Option(
+    USER = _Option(
         'user',
         desc='Users ids to report')
 
-    DATE_FROM = Option(
+    DATE_FROM = _Option(
         'date_from',
         desc='Include logs from this date and later [eg. "2016-07-02"]')
 
-    DATE_TO = Option(
+    DATE_TO = _Option(
         'date_to',
         desc='Exclude logs from this date and later [eg. "2016-07-03"]')
 
+    ORDER_BY = _OrderByOpt(
+        'order_by',
+        # default='first_name',
+        # TODO: Give 3 column names. Maybe all column names?
+        desc='Order results by one of the column names: [3 column names]')
+
     # Connection settings
-    COUCH_STRING = Option(
+    COUCH_STRING = _Option(
         'couchdb_connection_string',
         default='http://127.0.0.1:5984/',
         desc='CouchDB connection string [Default: %(default)s]')
 
-    COUCH_DATABASE = Option(
+    COUCH_DATABASE = _Option(
         'couchdb_database',
         default='circleanywhere',
         desc='Database to be used by CouchDB [Default: %(default)s]')
 
-    MONGO_STRING = Option(
+    MONGO_STRING = _Option(
         'mongodb_connection_string',
         default='mongodb://127.0.0.1:27017',
         desc='MongoDB connection string [Default: %(default)s]')
 
-    MONGO_DATABASE = Option(
+    MONGO_DATABASE = _Option(
         'mongo_database',
         default='circleanywhere',
         desc='Database to be used by MongoDB [Default: %(default)s]')
 
     # Script options
-    OUT_DEST = Option(
+    OUT_DEST = _Option(
         'output_destination',
         desc='File path to where the report should be saved [Default: screen]')
 
-    CFG_PATH = Option(
+    CFG_PATH = _Option(
         'cfg',
         default='%s/ca_analytics.cfg',
         desc='Path to cfg file [Default: "%s/ca_analytics.cfg"]')
 
-    LOG_PATH = Option(
+    LOG_PATH = _Option(
         'log',
         desc='Path to log file')
 
     # Program stuff
     # TODO: Get those as property
-    _DB_MONGO = Option(
+    _DB_MONGO = _Option(
         'db_mongo',
         desc='Reference to our mongoDB')
 
-    _DB_COUCH = Option(
+    _DB_COUCH = _Option(
         'db_couch',
         desc='Reference to our couchDB')
 
-    _details_provider = Option(
+    _details_provider = _Option(
         'info_proxy',
         desc='Proxy to CouchDB from which we get detailed info about events '
              'and users.')
@@ -561,11 +685,12 @@ class Setts:
                 continue
 
             if cfg_val is None and opt.value is None:
-                # Start
+                # When starting application
                 opt.value = opt.default
             elif cfg_val is None:
                 pass
             else:
+                # When updating settings later
                 opt.value = cfg_val
 
 

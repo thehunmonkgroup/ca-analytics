@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 from os.path import join as j
+
 from lib.database import init_db
 from lib.engine import get_ca_event_list
 from lib.extras import configure_argparse, Setts, OutputHandler
@@ -52,7 +53,7 @@ def main(start_cmd=None):
     evaluate_arguments()
 
 
-version = {'y': 2016, 'm': 12, 'd': 8}
+version = {'y': 2016, 'm': 12, 'd': 18}
 __version__ = '{y}.{m}.{d}'.format(**version)
 
 if __name__ == '__main__':
