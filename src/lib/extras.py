@@ -110,18 +110,26 @@ class OutputHandler:
         with open(f_path, 'w') as f:
             export_list = []
             for each_ca_event in self._ca_events_list:
-                event_dict = self.convert_to_dictionary(each_ca_event)
+                event_dict = self.convert_to_dictionary(each_ca_event, camelcase_switch=True)
                 export_list.append(event_dict)
             json.dump(export_list, f, sort_keys=False)
             print('* Done')
 
+
+
     @classmethod
-    def convert_to_dictionary(cls, event):
-        out = {'Event ID': event.event_id, 'Description': event.description, 'Calendar ID': event.calendar_id,
-               'Start time': event.start_time_str, 'End time': event.end_time_str}
-        users = [{'User ID': user.user_id, 'User name': user.display_name, 'Joined': user.timestamp_str}
-                 for user in event.event_participants()]
-        out['Users'] = users
+    def convert_to_dictionary(cls, event, camelcase_switch=False):
+        if not camelcase_switch:
+            out = {'Event ID': event.event_id, 'Description': event.description, 'Calendar ID': event.calendar_id,
+                   'Start time': event.start_time_str, 'End time': event.end_time_str}
+            users = [{'User ID': user.user_id, 'User name': user.display_name, 'Joined': user.timestamp_str}
+                     for user in event.event_participants()]
+            out['Users'] = users
+        else:
+            out = {'EventID': event.event_id, 'Description': event.description, 'CalendarID': event.calendar_id,
+                   'StartTime': event.start_time_str, 'EndTime': event.end_time_str}
+            users = [{'UserID': user.user_id, 'UserName': user.display_name, 'Joined': user.timestamp_str}
+                     for user in event.event_participants()]
         return out
 
 
