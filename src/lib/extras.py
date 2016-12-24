@@ -17,7 +17,7 @@ is_string = lambda val: isinstance(val, str)
 is_iterable = lambda val: isinstance(val, collections.Iterable)
 # TODO: Create base CaClass, place it there and add err silencing there too
 STRFTIME_FORMAT = '%Y-%m-%d %H:%M:%S'
-CSV_FIELDNAMES = ('Event ID', 'Description',
+CSV_FIELDNAMES = ('Event ID', 'Event title', 'Description',
                   'Calendar ID', 'Start time',
                   'End time', 'User ID',
                   'User name', 'Joined')
@@ -115,21 +115,20 @@ class OutputHandler:
             json.dump(export_list, f, sort_keys=False)
             print('* Done')
 
-
-
     @classmethod
     def convert_to_dictionary(cls, event, camelcase_switch=False):
         if not camelcase_switch:
-            out = {'Event ID': event.event_id, 'Description': event.description, 'Calendar ID': event.calendar_id,
-                   'Start time': event.start_time_str, 'End time': event.end_time_str}
+            out = {'Event ID': event.event_id, 'Event title': event.title, 'Description': event.description,
+                   'Calendar ID': event.calendar_id, 'Start time': event.start_time_str, 'End time': event.end_time_str}
             users = [{'User ID': user.user_id, 'User name': user.display_name, 'Joined': user.timestamp_str}
                      for user in event.event_participants()]
-            out['Users'] = users
+
         else:
-            out = {'EventID': event.event_id, 'Description': event.description, 'CalendarID': event.calendar_id,
-                   'StartTime': event.start_time_str, 'EndTime': event.end_time_str}
+            out = {'EventID': event.event_id, 'EventTitle': event.title, 'Description': event.description,
+                   'CalendarID': event.calendar_id, 'StartTime': event.start_time_str, 'EndTime': event.end_time_str}
             users = [{'UserID': user.user_id, 'UserName': user.display_name, 'Joined': user.timestamp_str}
                      for user in event.event_participants()]
+        out['Users'] = users
         return out
 
 

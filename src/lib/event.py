@@ -24,6 +24,7 @@ class CaEvent:
     _description = None
     _start_time = None
     _end_time = None
+    _title = None
 
     # Handle participants
     _event_participants = None
@@ -96,6 +97,13 @@ class CaEvent:
         return self._description
 
     @property
+    def title(self):
+        if self._title is not None:
+            return self._title
+        self._title = self._raw_details[EventFields.TITLE]
+        return self._title
+
+    @property
     def start_time(self):
         """
         Return start time for this event.
@@ -112,7 +120,7 @@ class CaEvent:
         except AttributeError as e:
             log_handler = self._get_log_handler(
                 exception_key=(self.event_id, self._error_msg_start_time))
-            log_handler(self._error_msg_start_time,self.event_id, self._start_time, e)
+            log_handler(self._error_msg_start_time, self.event_id, self._start_time, e)
 
         return self._start_time
 
