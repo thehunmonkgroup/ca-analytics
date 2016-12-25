@@ -83,7 +83,7 @@ class TestMain(unittest.TestCase):
         # TODO: Move to check_if_users_valid(ca_events, expected_events)
         for ca_event, expected_event in zip(ca_events, expected_events):
             self.check_if_users_valid(
-                script_events_users=ca_event.event_users,
+                script_events_users=ca_event.event_participants(),
                 expected_events_users=expected_users[expected_event],
                 event_id=expected_event.eventId
             )
@@ -107,7 +107,7 @@ class TestMain(unittest.TestCase):
 
         for ca_event, expected_event in zip(ca_events, expected_events):
             self.check_if_users_valid(
-                script_events_users=ca_event.event_users,
+                script_events_users=ca_event.event_participants(),
                 expected_events_users=expected_users[expected_event],
                 event_id=expected_event.eventId
             )
