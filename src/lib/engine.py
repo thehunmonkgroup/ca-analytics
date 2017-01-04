@@ -1,4 +1,3 @@
-import collections
 import logging
 
 from lib.database import MongoFields
@@ -37,32 +36,8 @@ def get_ca_event_list(selected_logs):
 
     Setts.details_provider.get_details_from_db()
 
-    return list(ca_events_holder.values())
+    return sort_output_events(event_list=ca_events_holder.values())
 
 
-def get_ca_events_old(db_data):
-    """
-    Return [CaEvent(), CaEvent(), ...]
-
-    :param db_data:
-    :return:
-    """
-
-    def fill_couchdb_info(ca_events_list):
-        for ca_evnt in ca_events_list:
-            ca_evnt.fill_with_couch_details()
-
-    # Effective deduplication mechanism
-    events = collections.defaultdict(CaEvent)
-    # TODO: Implicitly initialize CaEvent with eventId - we need get proxy obj
-
-    for row in db_data:
-        eventId = row['eventId']
-        events[eventId].append(log_entry=row)
-
-    # Get rid of dict, and sort events by id
-    ret = sorted(events.values(), key=lambda x: x.event_id)
-
-    # TODO: Can be done in a more elegant way?
-    fill_couchdb_info(ca_events_list=ret)
-    return ret
+def sort_output_events(event_list):
+    return sorted(event_list, key=Setts.ORDER_BY.event_sort_keys)

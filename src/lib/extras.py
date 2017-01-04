@@ -5,8 +5,10 @@ import errno
 import functools
 import json
 import logging
+import operator
 import os
 import time
+from collections import OrderedDict
 from os.path import join as j
 
 import ruamel.yaml as yaml
@@ -87,7 +89,9 @@ class OutputHandler:
         f_path = norm_path(f_path, mkfile=False, mkdir=False)
         with open(f_path, 'w') as f:
             print('* Exporting as: "%s"' % f_path)
-            writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES, extrasaction='ignore', quoting=csv.QUOTE_NONNUMERIC)
+            writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES,
+                                    extrasaction='ignore',
+                                    quoting=csv.QUOTE_NONNUMERIC)
             writer.writeheader()
             for each_ca_event in self._ca_events_list:
                 event_dict = self.convert_to_dictionary(each_ca_event)
@@ -111,9 +115,9 @@ class OutputHandler:
 
     @classmethod
     def convert_to_dictionary(cls, event):
-        out = {'EventID': event.event_id, 'EventTitle': event.title, 'Description': event.description,
-               'CalendarID': event.calendar_id, 'StartTime': event.start_time_str, 'EndTime': event.end_time_str}
-        users = [{'UserID': user.user_id, 'UserName': user.display_name, 'Joined': user.timestamp_str}
+        out = {'Event ID': event.event_id, 'Description': event.description, 'Calendar ID': event.calendar_id,
+               'Start time': event.start_time_str, 'End time': event.end_time_str}
+        users = [{'User ID': user.user_id, 'User name': user.display_name, 'Joined': user.timestamp_str}
                  for user in event.event_participants()]
         out['Users'] = users
         return out
