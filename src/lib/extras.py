@@ -115,9 +115,13 @@ class OutputHandler:
 
     @classmethod
     def convert_to_dictionary(cls, event):
-        out = {'EventID': event.event_id, 'EventTitle': event.title,'Description': event.description, 'CalendarID': event.calendar_id,
-               'StartTime': event.start_time_str, 'EndTime': event.end_time_str}
-        users = [{'UserID': user.user_id, 'UserName': user.display_name, 'Joined': user.timestamp_str}
+        out = {'EventID': event.event_id, 'EventTitle': event.title,
+               'Description': event.description,
+               'CalendarID': event.calendar_id,
+               'StartTime': event.start_time_str,
+               'EndTime': event.end_time_str}
+        users = [{'UserID': user.user_id, 'UserName': user.display_name,
+                  'Joined': user.timestamp_str}
                  for user in event.event_participants()]
         out['Users'] = users
         return out
@@ -194,7 +198,7 @@ def conf_logs(log_name, log_dir=None, console_level=logging.ERROR,
     :param file_level:
     :param print_dest:
     :param esb_log_dir: dir path to where esb.log file should be stored
-                                                    {esb_log_dir}/{esb_name}.log
+                                                {esb_log_dir}/{esb_name}.log
     :return:
     """
     from logging import handlers
