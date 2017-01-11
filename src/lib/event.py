@@ -39,12 +39,17 @@ class CaEvent:
         'This should never happen. Statistics may be corrupted.'
     )
     _error_msg_start_time = (
-        "Start date and probably all details for event [%s] are missing "
-        "in CouchDB. Returning start_date as [%s]. Error [%s]"
+        'Start_date and probably all details for event [%s] are missing '
+        'in CouchDB. Using first connected participant timestamp [%s] '
+        'as event start_date. Original error [%s]'
     )
     _error_msg_end_time = (
-        'Error estimating end time for the event [%s] due to details lack. '
-        'Start_time [%s], duration [%s], end_time [%s]. Error [%s]'
+        'End_time estimation error for the event [%s] due to details lack '
+        'in CouchDB. '
+        'Using last connected participant timestamp [%s] as estimated '
+        'event end_date. '
+        'Start_time [%s], estimated duration [%s], end_time [%s]. '
+        'Original error [%s]'
     )
 
     _str_representation_templ = (
@@ -110,10 +115,14 @@ class CaEvent:
         try:
             self._start_time = dateutil.parser.parse(raw_value)
         except AttributeError as e:
+            first_timestamp = self._event_participants.get_join_timestamps()[0]
+            self._start_time = first_timestamp
+
             log_handler = self._get_log_handler(
                 exception_key=(self.event_id, self._error_msg_start_time))
-            log_handler(self._error_msg_start_time,self.event_id, self._start_time, e)
-
+            log_handler(self._error_msg_start_time,
+                        self.event_id,
+                        self.start_time_str, e)
         return self._start_time
 
     @property
@@ -134,11 +143,17 @@ class CaEvent:
             dt = dateutil.relativedelta.relativedelta(minutes=duration)
             self._end_time = self.start_time + dt
         except TypeError as e:
+            # TODO: When leave time will be implemented for the users,
+            #       change it to the last user leaving
+            last_timestamp = self._event_participants.get_join_timestamps()[-1]
+            self._end_time = last_timestamp
+            duration = self._end_time - self._start_time
+
             log_handler = self._get_log_handler(
-                exception_key=(self.event_id, self._error_msg_start_time))
+                exception_key=(self.event_id, self._error_msg_end_time))
             log_handler(self._error_msg_end_time,
-                        self.event_id, self.start_time, duration,
-                        self._end_time, e)
+                        self.event_id, self.end_time_str, self.start_time_str,
+                        duration, self.end_time_str, e)
         return self._end_time
 
     @property
@@ -147,9 +162,9 @@ class CaEvent:
             return self.end_time.strftime(STRFTIME_FORMAT)
         except Exception as e:
             log.debug(e)
-            return str(self._start_time)
+            return self.start_time_str
 
-    def event_participants(self, sort_by=None):
+    def event_participants(self):
         return self._event_participants.unique
 
     @property

@@ -24,7 +24,6 @@ def evaluate_arguments():
     db_data = Setts._DB_MONGO.value.filter_date(data=db_data,
                                                 date_from=Setts.DATE_FROM.value,
                                                 date_to=Setts.DATE_TO.value)
-
     event_list = get_ca_event_list(selected_logs=db_data)
 
     printer = OutputHandler(ca_events_list=event_list)
@@ -53,7 +52,7 @@ def main(start_cmd=None):
     evaluate_arguments()
 
 
-version = {'y': 2016, 'm': 12, 'd': 18}
+version = {'y': 2017, 'm': 1, 'd': 11}
 __version__ = '{y}.{m}.{d}'.format(**version)
 
 if __name__ == '__main__':

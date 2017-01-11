@@ -1,4 +1,5 @@
 import logging
+import operator
 
 import dateutil.parser
 
@@ -143,6 +144,29 @@ class ParticipantsHandler:
 
     @property
     def unique(self):
+        sorting_key = Setts.ORDER_BY.participant_sort_keys
+
+        all_sorted = self.get_all_sorted(sort_key=sorting_key)
+
+        # Dispose of all redundant participant logs, but leave first occurance
+        return sorted(set(all_sorted), key=sorting_key)
+
+    @property
+    def unique_ids(self):
+        ids = (x.user_id for x in self.unique)
+        return sorted(set(ids))
+
+    def get_join_timestamps(self, join_sort_key=None):
+        join_sort_key = (join_sort_key or
+                         operator.attrgetter(Setts._OrderByOpt.OUR_JOIN_TIME))
+
+        participant_join_timestamps = tuple(
+            participant.timestamp for participant
+            in self.get_all_sorted(sort_key=join_sort_key))
+
+        return participant_join_timestamps
+
+    def get_all_sorted(self, sort_key=Setts.ORDER_BY.participant_sort_keys):
         """
         Return deduplicated users with earliest time they joined an event and
          sorted id ascending.
@@ -155,16 +179,8 @@ class ParticipantsHandler:
         else:
             # Sort two times. First so that set() will memorize first correct
             #   object. Second cos set() is not preserving order.
-            all_sorted = sorted(self._participant_list,
-                                key=Setts.ORDER_BY.participant_sort_keys)
-            # Dispose of all redundant participant logs, but leave first
-            return sorted(set(all_sorted),
-                          key=Setts.ORDER_BY.participant_sort_keys)
-
-    @property
-    def unique_ids(self):
-        ids = (x.user_id for x in self.unique)
-        return sorted(set(ids))
+            all_sorted = sorted(self._participant_list, key=sort_key)
+            return all_sorted
 
     def add(self, log_entry):
         ca_participant = CaParticipant(log_entry=log_entry)
