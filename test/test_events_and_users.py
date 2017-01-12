@@ -27,6 +27,7 @@ class TestMain(unittest.TestCase):
     # TODO: Test for show users' events
     # TODO: *Test for correct date from/to limits
     # TODO: *Test all script switches ?
+    # TODO: Test order when date is None type
 
     get_expected_users = ResponseFactory.get_users_for_given_event_class
 
