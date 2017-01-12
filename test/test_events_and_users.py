@@ -26,9 +26,8 @@ class TestMain(unittest.TestCase):
     # TODO: Fail with: 00494, 00323: No event for id [00494] found in CouchDB
     # TODO: Test for select event&user
     # TODO: Test for show users' events
-    # TODO: *Test for correct date from/to limits
-    # TODO: *Test all script switches ?
-    # TODO: Test order when date is None type
+    # TODO: Change name of test classes
+    # TODO: Refactor out common patchers to Mixin
 
     get_expected_users = ResponseFactory.get_users_for_given_event_class
 
