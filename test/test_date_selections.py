@@ -101,9 +101,6 @@ class TestMain(unittest.TestCase):
         self.check_if_dates_earlier_than(date_to=expected_date_to,
                                          logs=filtered_logs)
 
-    def test_should_raise_an_exception_when_incorrect_data(self):
-        pass
-
     def get_filtered_mongo_data(self):
         """
         This is returned after filtering
@@ -117,7 +114,6 @@ class TestMain(unittest.TestCase):
 
         for row in logs:
             log_date = dateutil.parser.parse(row['timestamp'])
-            print(log_date)
             self.assertGreater(date_to, log_date)
 
     def check_if_dates_later_or_equal_than(self, date_from, logs):
