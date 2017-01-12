@@ -13,6 +13,7 @@ from ca_analytics import main
 from example_data import Event111, Event222
 from lib.database import MongoData, CouchData
 from helpers import ResponseFactory
+from lib.extras import Setts
 
 rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
 if rwd not in sys.path:
@@ -56,6 +57,8 @@ class TestMain(unittest.TestCase):
 
         # Stop patch
         self.addCleanup(patch.stopall)
+
+        Setts.refresh(reset=True)
 
         # How to get to script data:
         # print(self.mock_mongo_init.call_args_list)
