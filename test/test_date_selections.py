@@ -68,8 +68,8 @@ class TestMain(unittest.TestCase):
 
     def test_should_filter_out_later_or_equal_dates(self):
         # GIVEN
-        expected_date_from = '2016-07-02'
-        cmd = self.CMD_TEST_DATE + '--date_to %s' % expected_date_from
+        expected_date_to = '2016-07-02'
+        cmd = self.CMD_TEST_DATE + '--date_to %s' % expected_date_to
         cmd = cmd.split()
 
         # WHEN
@@ -77,23 +77,29 @@ class TestMain(unittest.TestCase):
 
         # THEN
         filtered_logs = self.get_filtered_mongo_data()
-        self.check_if_dates_earlier_than(date_to=expected_date_from,
+        self.check_if_dates_earlier_than(date_to=expected_date_to,
                                          logs=filtered_logs)
 
-    def test_should_include_upper_bound(self):
-        pass
+    def test_should_include_up_but_not_low_bound_when_period_given(self):
+        # GIVEN
+        expected_date_from = '2016-07-02'
+        expected_date_to = '2016-07-05'
+        cmd = (
+            self.CMD_TEST_DATE + '--date_from %s --date_to %s'
+            % (expected_date_from, expected_date_to)
+        )
+        cmd = cmd.split()
 
-    def test_should_include_lower_bound(self):
-        pass
+        # WHEN
+        main(start_cmd=cmd)
 
-    def test_should_omit_just_before_upper_bound(self):
-        pass
+        # THEN
+        filtered_logs = self.get_filtered_mongo_data()
 
-    def test_should_omit_just_after_lower_bound(self):
-        pass
-
-    def test_should_include_up_and_low_when_period_given(self):
-        pass
+        self.check_if_dates_later_or_equal_than(date_from=expected_date_from,
+                                                logs=filtered_logs)
+        self.check_if_dates_earlier_than(date_to=expected_date_to,
+                                         logs=filtered_logs)
 
     def test_should_raise_an_exception_when_incorrect_data(self):
         pass
