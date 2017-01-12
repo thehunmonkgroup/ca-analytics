@@ -1,4 +1,4 @@
-from example_data import User111, User222, Event111, Event222
+from example_data import User111, User222, Event111, Event222, User_2016_07_02
 from lib.extras import make_iterable
 
 
@@ -6,7 +6,8 @@ class ResponseFactory:
     NOT_CALLED = 'not called'
     sample_users = [
         User111,
-        User222
+        User222,
+        User_2016_07_02,
     ]
     sample_events = [
         Event111,

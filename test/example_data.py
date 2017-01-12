@@ -34,8 +34,8 @@ class ClassProperty(property):
         return self.fget.__get__(None, owner)()
 
 
-MongoLogSetup = namedtuple('mongo_log_setup', ['event_id',
-                                               'timestamps_from_earliest'])
+MongoLogSetup = namedtuple('mongo_log_setup',
+                           ('event_id', 'join_timestamps_from_earliest'))
 
 
 class ObjectId:
@@ -172,7 +172,7 @@ class BaseMongoUserMock(metaclass=ABCMeta):
         for log_setup in cls._participated_in:
             log_entries = get_logs_for_this_event(
                 event_id=log_setup.event_id,
-                timestamps_list=log_setup.timestamps_from_earliest
+                timestamps_list=log_setup.join_timestamps_from_earliest
             )
             ret.extend(log_entries)
         return ret
@@ -181,7 +181,7 @@ class BaseMongoUserMock(metaclass=ABCMeta):
     def get_earliest_timestamp(cls, event_id):
         # dateutil.parser.parse
         event = [e for e in cls._participated_in if e.event_id == event_id][0]
-        earliest_timestamp = event.timestamps_from_earliest[0]
+        earliest_timestamp = event.join_timestamps_from_earliest[0]
         # earliest_timestamp = '2016-05-12T17:51:24.633Z'
         return dateutil.parser.parse(earliest_timestamp)
 
@@ -345,7 +345,7 @@ class User111(BaseCouchUserMock, BaseMongoUserMock):
 
     _participated_in = [
         MongoLogSetup(event_id=Event111.eventId,
-                      timestamps_from_earliest=[
+                      join_timestamps_from_earliest=[
                           '2016-05-12T16:53:36.363Z',
                           '2016-05-12T17:48:03.286Z',
                           '2016-05-12T17:50:35.528Z',
@@ -353,7 +353,7 @@ class User111(BaseCouchUserMock, BaseMongoUserMock):
                           '2016-05-12T19:01:16.784Z',
                       ]),
         MongoLogSetup(event_id=Event222.eventId,
-                      timestamps_from_earliest=[
+                      join_timestamps_from_earliest=[
                           '2016-07-02T16:59:56.186Z',
                           '2016-07-02T16:59:58.835Z',
                           '2016-07-02T17:00:21.574Z',
@@ -390,10 +390,66 @@ class User222(BaseCouchUserMock, BaseMongoUserMock):
 
     _participated_in = [
         MongoLogSetup(event_id=Event111.eventId,
-                      timestamps_from_earliest=[
+                      join_timestamps_from_earliest=[
                           '2016-05-12T14:46:04.450Z',
                           '2016-05-12T17:51:24.633Z',
                           '2016-05-12T19:01:01.030Z',
                           '2016-05-12T20:15:17.536Z',
+                      ]),
+    ]
+
+
+class User_2016_07_02(BaseCouchUserMock, BaseMongoUserMock):
+    userId = 102137774470020160702
+    givenName = 'Kevin'
+    familyName = 'Foo'
+    emails = [{'value': 'fake_kevin@gmail.com'}]
+
+    _couch_value = {
+        'perms': {'joinEvents': False,
+                  'createEvents': True},
+        'picture': 'https://lh4.googleusercontent.com/-yI/phot2o.jpg',
+        'link': 'https://plus.google.com/+Buba',
+        '_rev': '96-7b43ab17f2c85079aee44d8a077c2a5b',
+        'provider': 'google',
+        'isPlusUser': True,
+        'admin': False,
+        'displayName': None,
+        '_id': None,
+        'name': None,
+        'preferredContact': {},
+        'emails': None,
+        'superuser': False,
+        'createdViaHangout': False,
+        'id': None,
+        'networkList': {'65': ['11434645354444774444'],
+                        '240': ['1087437344444477444446'],
+                        '86': ['100597781244447744444']},
+        'google_json': None
+    }
+
+    _participated_in = [
+        MongoLogSetup(event_id=Event222.eventId,
+                      join_timestamps_from_earliest=[
+                          '2016-07-01T00:00:00.186Z',
+                          '2016-07-01T16:59:56.186Z',
+                          '2016-07-01T16:59:58.835Z',
+                          '2016-07-01T17:00:21.574Z',
+                          '2016-07-01T18:02:34.475Z',
+                          '2016-07-01T23:59:34.475Z',
+
+                          '2016-07-02T00:00:00.186Z',
+                          '2016-07-02T16:59:56.186Z',
+                          '2016-07-02T16:59:58.835Z',
+                          '2016-07-02T17:00:21.574Z',
+                          '2016-07-02T18:02:34.475Z',
+                          '2016-07-02T23:59:59.475Z',
+
+                          '2016-07-03T00:00:00.186Z',
+                          '2016-07-03T16:59:56.186Z',
+                          '2016-07-03T16:59:58.835Z',
+                          '2016-07-03T17:00:21.574Z',
+                          '2016-07-03T18:02:34.475Z',
+                          '2016-07-03T23:59:59.475Z',
                       ]),
     ]
