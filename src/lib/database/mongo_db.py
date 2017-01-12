@@ -100,7 +100,7 @@ class MongoData:
                     if log_date < date_to:
                         ret_f.append(row)
                 except KeyError as e:
-                    log.error("Couldn\'t determine logs date [%s] Error [%s]",
+                    log.error("Couldn't determine logs date [%s] Error [%s]",
                               row, e)
             return ret_f
 
