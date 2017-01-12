@@ -11,6 +11,7 @@ from ca_analytics import main
 from example_data import User_2016_07_02
 from helpers import ResponseFactory
 from lib.database import MongoData, CouchData
+from lib.extras import Setts
 
 rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
 if rwd not in sys.path:
@@ -49,12 +50,7 @@ class TestMain(unittest.TestCase):
         # Stop patch
         self.addCleanup(patch.stopall)
 
-        # How to get to script data:
-        # print(self.mock_mongo_init.call_args_list)
-        # print(self.mock_mongo_get_data.call_args_list)
-        # print(self.mock_coach_init.call_args_list)
-        # print(self.mock_coach_get_data.call_args_list)
-        # print(self.mock_output_handler.call_args_list)
+        Setts.refresh(reset=True)
 
     def test_should_filter_out_earlier_dates(self):
         # GIVEN
@@ -70,8 +66,19 @@ class TestMain(unittest.TestCase):
         self.check_if_dates_later_or_equal_than(date_from=expected_date_from,
                                                 logs=filtered_logs)
 
-    def test_should_filter_later_dates(self):
-        pass
+    def test_should_filter_out_later_or_equal_dates(self):
+        # GIVEN
+        expected_date_from = '2016-07-02'
+        cmd = self.CMD_TEST_DATE + '--date_to %s' % expected_date_from
+        cmd = cmd.split()
+
+        # WHEN
+        main(start_cmd=cmd)
+
+        # THEN
+        filtered_logs = self.get_filtered_mongo_data()
+        self.check_if_dates_earlier_than(date_to=expected_date_from,
+                                         logs=filtered_logs)
 
     def test_should_include_upper_bound(self):
         pass
@@ -98,6 +105,14 @@ class TestMain(unittest.TestCase):
         """
         db_data = self.mock_get_ca_event_list.call_args[1]['selected_logs']
         return db_data
+
+    def check_if_dates_earlier_than(self, date_to, logs):
+        date_to = self._parse_cmd_date(cmd_date=date_to)
+
+        for row in logs:
+            log_date = dateutil.parser.parse(row['timestamp'])
+            print(log_date)
+            self.assertGreater(date_to, log_date)
 
     def check_if_dates_later_or_equal_than(self, date_from, logs):
         date_from = self._parse_cmd_date(cmd_date=date_from)
