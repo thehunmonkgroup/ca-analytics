@@ -1,19 +1,13 @@
-#!/usr/bin/env python3
-# (c) 2016 Alek
-#  Integrations test for Circle Anywhere
-
 import logging
 import os
 import sys
-import unittest
+from unittest import TestCase
 from unittest.mock import patch
 
 import ca_analytics
 from ca_analytics import main
 from example_data import Event111, Event222
-from lib.database import MongoData, CouchData
-from helpers import ResponseFactory
-from lib.extras import Setts
+from helpers import ResponseFactory, DbPatcherMixin
 
 rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
 if rwd not in sys.path:
@@ -22,12 +16,11 @@ if rwd not in sys.path:
 log = logging.getLogger(__name__)
 
 
-class TestMain(unittest.TestCase):
-    # TODO: Fail with: 00494, 00323: No event for id [00494] found in CouchDB
-    # TODO: Test for select event&user
-    # TODO: Test for show users' events
-    # TODO: Change name of test classes
-    # TODO: Refactor out common patchers to Mixin
+class TestUser(DbPatcherMixin, TestCase):
+    pass
+
+
+class TestEvent(DbPatcherMixin, TestCase):
 
     get_expected_users = ResponseFactory.get_users_for_given_event_class
 
@@ -35,30 +28,10 @@ class TestMain(unittest.TestCase):
         self.patcher_output_handler = patch.object(ca_analytics,
                                                    'OutputHandler')
 
-        self.patcher_coach_get_data = patch.object(CouchData, 'get_data',
-                                                   side_effect=ResponseFactory.couch_get_data_side_effect)
-        self.patcher_coach_init = patch.object(CouchData, '__init__',
-                                               return_value=None)
-
-        self.patcher_mongo_get_data = patch.object(MongoData, 'get_data',
-                                                   side_effect=ResponseFactory.mongo_get_data_side_effect)
-        self.patcher_mongo_init = patch.object(MongoData, '__init__',
-                                               return_value=None)
-
         # Start patch
         self.mock_output_handler = self.patcher_output_handler.start()
 
-        self.mock_coach_get_data = self.patcher_coach_get_data.start()
-        self.mock_coach_init = self.patcher_coach_init.start()
-
-        self.mock_mongo_get_data = self.patcher_mongo_get_data.start()
-        self.mock_mongo_init = self.patcher_mongo_init.start()
-
-        # Stop patch
-        self.addCleanup(patch.stopall)
-
-        Setts.refresh(reset=True)
-
+        super().setUp()
         # How to get to script data:
         # print(self.mock_mongo_init.call_args_list)
         # print(self.mock_mongo_get_data.call_args_list)
@@ -159,7 +132,3 @@ class TestMain(unittest.TestCase):
                 expected_user.get_earliest_timestamp(event_id=event_id),
                 msg='Timestamps mismatch. User was logged earlier!'
             )
-
-
-if __name__ == '__main__':
-    unittest.main()

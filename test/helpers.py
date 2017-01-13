@@ -1,5 +1,19 @@
-from example_data import User111, User222, Event111, Event222, User_2016_07_02
+import logging
+import os
+import sys
+from unittest.mock import patch
+
+from example_data import Event111, Event222
+from example_data import User111, User222, User_2016_07_02
+from lib.database import MongoData, CouchData
+from lib.extras import Setts
 from lib.extras import make_iterable
+
+rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
+if rwd not in sys.path:
+    sys.path.append(rwd)
+
+log = logging.getLogger(__name__)
 
 
 class ResponseFactory:
@@ -40,7 +54,8 @@ class ResponseFactory:
         """
         ret = {}
         for event_class in event_list:
-            users = cls.get_all_users_attending_event(event_id=event_class.eventId)
+            users = cls.get_all_users_attending_event(
+                event_id=event_class.eventId)
             ret[event_class] = users
         return ret
 
@@ -88,3 +103,42 @@ class ResponseFactory:
         ret = [row for row in cls.get_all_couch_responses()
                if row.key in selected_ids]
         return ret
+
+
+class DbPatcherMixin:
+    # TODO: Fail with: 00494, 00323: No event for id [00494] found in CouchDB
+    # TODO: Test for select event&user
+    # TODO: Test for show users' events
+    # TODO: Change name of test classes
+
+    patcher_coach_get_data = patcher_coach_init = \
+        patcher_mongo_get_data = patcher_mongo_init = \
+        mock_coach_get_data = mock_coach_init = \
+        mock_mongo_get_data = mock_mongo_init = None
+
+    def setUp(self):
+        couch_side_effects = ResponseFactory.couch_get_data_side_effect
+        mongo_side_effects = ResponseFactory.mongo_get_data_side_effect
+
+        self.patcher_coach_get_data = patch.object(
+            CouchData, 'get_data', side_effect=couch_side_effects)
+        self.patcher_coach_init = patch.object(
+            CouchData, '__init__', return_value=None)
+
+        self.patcher_mongo_get_data = patch.object(
+            MongoData, 'get_data', side_effect=mongo_side_effects)
+        self.patcher_mongo_init = patch.object(
+            MongoData, '__init__', return_value=None)
+
+        # Start patch
+        self.mock_coach_get_data = self.patcher_coach_get_data.start()
+        self.mock_coach_init = self.patcher_coach_init.start()
+
+        self.mock_mongo_get_data = self.patcher_mongo_get_data.start()
+        self.mock_mongo_init = self.patcher_mongo_init.start()
+
+        # Stop patch
+        self.addCleanup(patch.stopall)
+
+        # Reset settings, as there is only one instance of this class
+        Setts.refresh(reset=True)

@@ -1,13 +1,11 @@
 import logging
 import os
 import sys
-import unittest
+from unittest import TestCase
 from unittest.mock import patch
 
 import ca_analytics
-from helpers import ResponseFactory
-from lib.database import MongoData, CouchData
-from lib.extras import Setts
+from helpers import DbPatcherMixin
 
 rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
 if rwd not in sys.path:
@@ -16,34 +14,14 @@ if rwd not in sys.path:
 log = logging.getLogger(__name__)
 
 
-class TestEventsInCouchDB(unittest.TestCase):
+class TestOrderByEventsPresentInDB(DbPatcherMixin, TestCase):
     def setUp(self):
         self.patcher_get_ca_event_list = patch.object(ca_analytics,
                                                       'get_ca_event_list')
 
-        self.patcher_coach_get_data = patch.object(CouchData, 'get_data',
-                                                   side_effect=ResponseFactory.couch_get_data_side_effect)
-        self.patcher_coach_init = patch.object(CouchData, '__init__',
-                                               return_value=None)
-
-        self.patcher_mongo_get_data = patch.object(MongoData, 'get_data',
-                                                   side_effect=ResponseFactory.mongo_get_data_side_effect)
-        self.patcher_mongo_init = patch.object(MongoData, '__init__',
-                                               return_value=None)
-
         # Start patch
         self.mock_get_ca_event_list = self.patcher_get_ca_event_list.start()
-
-        self.mock_coach_get_data = self.patcher_coach_get_data.start()
-        self.mock_coach_init = self.patcher_coach_init.start()
-
-        self.mock_mongo_get_data = self.patcher_mongo_get_data.start()
-        self.mock_mongo_init = self.patcher_mongo_init.start()
-
-        # Stop patch
-        self.addCleanup(patch.stopall)
-
-        Setts.refresh(reset=True)
+        super().setUp()
 
     def test_should_sort_events_by_event_id(self):
         pass
@@ -58,34 +36,14 @@ class TestEventsInCouchDB(unittest.TestCase):
         pass
 
 
-class TestEventsNotInCouchDB(unittest.TestCase):
+class TestOrderByEventsNotInDB(DbPatcherMixin, TestCase):
     def setUp(self):
         self.patcher_get_ca_event_list = patch.object(ca_analytics,
                                                       'get_ca_event_list')
 
-        self.patcher_coach_get_data = patch.object(CouchData, 'get_data',
-                                                   side_effect=ResponseFactory.couch_get_data_side_effect)
-        self.patcher_coach_init = patch.object(CouchData, '__init__',
-                                               return_value=None)
-
-        self.patcher_mongo_get_data = patch.object(MongoData, 'get_data',
-                                                   side_effect=ResponseFactory.mongo_get_data_side_effect)
-        self.patcher_mongo_init = patch.object(MongoData, '__init__',
-                                               return_value=None)
-
         # Start patch
         self.mock_get_ca_event_list = self.patcher_get_ca_event_list.start()
-
-        self.mock_coach_get_data = self.patcher_coach_get_data.start()
-        self.mock_coach_init = self.patcher_coach_init.start()
-
-        self.mock_mongo_get_data = self.patcher_mongo_get_data.start()
-        self.mock_mongo_init = self.patcher_mongo_init.start()
-
-        # Stop patch
-        self.addCleanup(patch.stopall)
-
-        Setts.refresh(reset=True)
+        super().setUp()
 
     def test_should_assign_first_join_timestamp_as_event_start(self):
         pass
