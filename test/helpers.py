@@ -76,15 +76,33 @@ class ResponseFactory:
         return ret
 
     @classmethod
-    def mongo_get_data_side_effect(cls, event_ids=NOT_CALLED,
-                                   user_ids=NOT_CALLED):
+    def mongo_get_data_side_effect(cls, event_ids=None, user_ids=None):
         # print('called mongo_side_effect with:', {'event_ids': event_ids,
         #                                          'user_ids': user_ids})
 
+        def handle_user(logs, u_ids, e_ids):
+            return [entry for entry in logs if entry['userId'] in u_ids]
+
+        def handle_event(logs, u_ids, e_ids):
+            return [entry for entry in logs if entry['eventId'] in e_ids]
+
+        def handle_both(logs, u_ids, e_ids):
+            return [entry for entry in logs
+                    if entry['eventId'] in e_ids and entry['userId'] in u_ids]
+
+        handler = None
+        if event_ids and user_ids:
+            handler = handle_both
+        elif event_ids:
+            handler = handle_event
+        elif user_ids:
+            handler = handle_user
+
         event_ids, user_ids = make_iterable(evnt_ids=event_ids,
                                             usr_ids=user_ids)
-        ret = [entry for entry in cls.get_all_mongo_logs()
-               if entry['eventId'] in event_ids or entry['userId'] in user_ids]
+
+        all_logs = cls.get_all_mongo_logs()
+        ret = handler(logs=all_logs, u_ids=user_ids, e_ids=event_ids)
         return ret
 
     @classmethod
