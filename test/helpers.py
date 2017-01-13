@@ -3,7 +3,7 @@ import os
 import sys
 from unittest.mock import patch
 
-from example_data import Event111, Event222
+from example_data import Event111, Event222, Event333
 from example_data import User111, User222, User_2016_07_02
 from lib.database import MongoData, CouchData
 from lib.extras import Setts
@@ -25,7 +25,8 @@ class ResponseFactory:
     ]
     sample_events = [
         Event111,
-        Event222
+        Event222,
+        Event333,
     ]
 
     @classmethod
@@ -128,6 +129,7 @@ class DbPatcherMixin:
     # TODO: Test for select event&user
     # TODO: Test for show users' events
     # TODO: Change name of test classes
+    get_expected_users = ResponseFactory.get_users_for_given_event_class
 
     patcher_coach_get_data = patcher_coach_init = \
         patcher_mongo_get_data = patcher_mongo_init = \
@@ -160,3 +162,47 @@ class DbPatcherMixin:
 
         # Reset settings, as there is only one instance of this class
         Setts.refresh(reset=True)
+
+    def get_script_processed_data(self):
+        """
+        This data is processed by the script, right before being displayed.
+
+        :return:
+        """
+        ca_events = self.mock_output_handler.call_args[1]['ca_events_list']
+        return ca_events
+
+    def check_if_events_valid(self, script_events_data, expected_events_data):
+        """
+        Output will be sorted by id number, so expected events should also be
+         added in order.
+
+        :param script_events_data:
+        :param expected_events_data:
+        :return:
+        """
+        self.assertEqual(len(script_events_data), len(expected_events_data))
+
+        events = (script_events_data, expected_events_data)
+        for ca_event, expected_event in zip(*events):
+            self.assertEqual(ca_event.event_id, expected_event.eventId)
+            self.assertEqual(ca_event.description, expected_event.description)
+            self.assertEqual(ca_event.calendar_id, expected_event.calendar_id)
+            self.assertEqual(ca_event.start_time, expected_event.start_time)
+
+    def check_if_users_valid(self, script_events_users, expected_events_users,
+                             event_id):
+        self.assertEqual(len(script_events_users), len(expected_events_users))
+
+        for user in script_events_users:
+            # Dunno in which order it was added to sample data
+            expected_user = [u for u in expected_events_users
+                             if u.userId == user.user_id][0]
+
+            self.assertEqual(user.user_id, expected_user.userId)
+            self.assertEqual(user.display_name, expected_user.display_name)
+            self.assertEqual(
+                user.timestamp,
+                expected_user.get_earliest_timestamp(event_id=event_id),
+                msg='Timestamps mismatch. User was logged earlier!'
+            )

@@ -314,6 +314,69 @@ class Event222(BaseCouchEventMock):
     }
 
 
+class Event333(BaseCouchEventMock):
+    eventId = 333
+    dateAndTime = '2016-03-03T17:00:00+00:00'
+
+    _resp_value = {
+        'timeZoneValue': 'Pacific/Honolulu',
+        'muteLock': False,
+        'duration': 60,
+        'adminProposedSessions': True,
+        'shortName': None,
+        'facilitatorLead': '113444444444444433443',
+        'facilitatorCo': '102137444444444443348',
+        'description': 'Whats alive in you NOW?',
+        'youtubeEmbed': None,
+        'overflowMessage': '',
+        'history': {
+            'event': {
+                '113445444444444443344': {'total': 3984434, 'start': None},
+                '108333444444444443344': {'total': 4224434, 'start': None},
+                '100958444444444443344': {'total': 4334434, 'start': None},
+                '113346444444444443344': {'total': 1034434, 'start': None},
+                '104470444444444443344': {'total': 4334434, 'start': None},
+                '102137444444444443344': {'total': 4334434, 'start': None},
+                '100143444444444443344': {'total': 4314434, 'start': None},
+                '116228444444444443344': {'total': 4334434, 'start': None},
+                '106432444444444443344': {'total': 4284434, 'start': None},
+                '108611444444444443344': {'total': 4334434, 'start': None},
+                '107452444444444443344': {'total': 3634434, 'start': None}},
+            'sessions': {
+                '1165': {'108333970581444444444': {'total': 11, 'start': None},
+                         '108611793445444444444': {'total': 7, 'start': None},
+                         '107452622478444444444': {'total': 1, 'start': None},
+                         '102137775077444444444': {'total': 2, 'start': None},
+                         '100143115762444444444': {'total': 5, 'start': None}},
+                '1164': {
+                    '113445281444444444444': {'total': 1334300, 'start': None},
+                    '108333971444444444444': {'total': 5, 'start': None},
+                    '102137771444444444444': {'total': 3, 'start': None},
+                    '104470311444444444444': {'total': 14, 'start': None},
+                    '100958091444444444444': {'total': 13, 'start': None},
+                    '100143111444444444444': {'total': 6, 'start': None},
+                    '116228711444444444444': {'total': 31, 'start': None},
+                    '106432111444444444444': {'total': 16, 'start': None},
+                    '108611791444444444444': {'total': 9, 'start': None}}}},
+        'calendarId': 'member',
+        'previousVideoEmbeds': [],
+        '_rev': '379-e7ece17fd61440dc09ba79228bad6326',
+        'conferenceOverride': '',
+        'dateAndTime': None,
+        'sessionProvider': 'google',
+        'admins': [{'id': '113445282444444443343'},
+                   {'id': '102137775444444443348'}],
+        'open': False,
+        'title': 'Circling', 'whiteboard': {
+            'message': "Welcome everyone to event 333! Please foo!"},
+        'sessionsOpen': True,
+        'overflowUserCap': 20,
+        'id': None,
+        '_id': None,
+        'organizer': 'none'
+    }
+
+
 class User111(BaseCouchUserMock, BaseMongoUserMock):
     userId = 102137774477271133111
     givenName = 'John'
@@ -358,6 +421,13 @@ class User111(BaseCouchUserMock, BaseMongoUserMock):
                           '2016-07-02T16:59:58.835Z',
                           '2016-07-02T17:00:21.574Z',
                           '2016-07-02T18:02:34.475Z',
+                      ]),
+        MongoLogSetup(event_id=Event333.eventId,
+                      join_timestamps_from_earliest=[
+                          '2016-03-03T16:59:56.186Z',
+                          '2016-03-03T16:59:58.835Z',
+                          '2016-03-03T17:00:21.574Z',
+                          '2016-03-03T18:02:34.475Z',
                       ]),
     ]
 
