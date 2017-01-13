@@ -39,6 +39,8 @@ def evaluate_arguments():
 
 
 def main(start_cmd=None):
+    # start_cmd = '-e 513 523 -u 104470315585625006456'.split()
+    # start_cmd = ''.split()
     args, parser = configure_argparse(rwd=rwd, start_cmd=start_cmd)
 
     # Load default cfg
