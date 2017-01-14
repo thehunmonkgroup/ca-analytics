@@ -664,11 +664,12 @@ class Setts:
         return {opt.key: opt.value for opt in cls.opt_list}
 
     @classmethod
-    def refresh(cls, cfg=None, f_pth=''):
+    def refresh(cls, cfg=None, f_pth='', reset=False):
         """
         Refreshes app setts with yaml config file or cfg dict.
           Content of yaml cfg file will overwrite cfg dict!
 
+        :version: 2017.01.12
         :version: 2016.12.03
         """
         if f_pth:
@@ -684,7 +685,7 @@ class Setts:
                 # Those are setts as ClassProperties for app use, so skip it
                 continue
 
-            if cfg_val is None and opt.value is None:
+            if (cfg_val is None and opt.value is None) or reset:
                 # When starting application
                 opt.value = opt.default
             elif cfg_val is None:

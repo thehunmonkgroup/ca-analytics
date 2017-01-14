@@ -157,6 +157,13 @@ class ParticipantsHandler:
         return sorted(set(ids))
 
     def get_join_timestamps(self, join_sort_key=None):
+        """
+        Return join timestamps in descending order, unless join_sort_key will
+          sort it differently.
+
+        :param join_sort_key:
+        :return:
+        """
         join_sort_key = (join_sort_key or
                          operator.attrgetter(Setts._OrderByOpt.OUR_JOIN_TIME))
 

@@ -11,8 +11,6 @@ from unittest.mock import MagicMock
 
 import dateutil
 
-from lib.extras import make_iterable
-
 rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
 if rwd not in sys.path:
     sys.path.append(rwd)
@@ -36,8 +34,8 @@ class ClassProperty(property):
         return self.fget.__get__(None, owner)()
 
 
-MongoLogSetup = namedtuple('mongo_log_setup', ['event_id',
-                                               'timestamps_from_earliest'])
+MongoLogSetup = namedtuple('mongo_log_setup',
+                           ('event_id', 'join_timestamps_from_earliest'))
 
 
 class ObjectId:
@@ -174,18 +172,30 @@ class BaseMongoUserMock(metaclass=ABCMeta):
         for log_setup in cls._participated_in:
             log_entries = get_logs_for_this_event(
                 event_id=log_setup.event_id,
-                timestamps_list=log_setup.timestamps_from_earliest
+                timestamps_list=log_setup.join_timestamps_from_earliest
             )
             ret.extend(log_entries)
         return ret
 
     @classmethod
     def get_earliest_timestamp(cls, event_id):
-        # dateutil.parser.parse
+        return cls._get_timestamp(event_id=event_id, date_index=0)
+
+    @classmethod
+    def get_latest_timestamp(cls, event_id):
+        return cls._get_timestamp(event_id=event_id, date_index=-1)
+
+    @classmethod
+    def _get_timestamp(cls, event_id, date_index=0):
+        """
+        :param event_id:
+        :param date_index: 0: earliest, -1: latest timestamp
+        :return:
+        """
         event = [e for e in cls._participated_in if e.event_id == event_id][0]
-        earliest_timestamp = event.timestamps_from_earliest[0]
+        timestamp = event.join_timestamps_from_earliest[date_index]
         # earliest_timestamp = '2016-05-12T17:51:24.633Z'
-        return dateutil.parser.parse(earliest_timestamp)
+        return dateutil.parser.parse(timestamp)
 
     @classmethod
     def _get_log_entry(cls, eventId, timestamp):
@@ -316,6 +326,76 @@ class Event222(BaseCouchEventMock):
     }
 
 
+class Event333(BaseCouchEventMock):
+    eventId = 333
+    dateAndTime = '2016-03-03T17:00:00+00:00'
+
+    _resp_value = {
+        'timeZoneValue': 'Pacific/Honolulu',
+        'muteLock': False,
+        'duration': 60,
+        'adminProposedSessions': True,
+        'shortName': None,
+        'facilitatorLead': '113444444444444433443',
+        'facilitatorCo': '102137444444444443348',
+        'description': 'Whats alive in you NOW?',
+        'youtubeEmbed': None,
+        'overflowMessage': '',
+        'history': {
+            'event': {
+                '113445444444444443344': {'total': 3984434, 'start': None},
+                '108333444444444443344': {'total': 4224434, 'start': None},
+                '100958444444444443344': {'total': 4334434, 'start': None},
+                '113346444444444443344': {'total': 1034434, 'start': None},
+                '104470444444444443344': {'total': 4334434, 'start': None},
+                '102137444444444443344': {'total': 4334434, 'start': None},
+                '100143444444444443344': {'total': 4314434, 'start': None},
+                '116228444444444443344': {'total': 4334434, 'start': None},
+                '106432444444444443344': {'total': 4284434, 'start': None},
+                '108611444444444443344': {'total': 4334434, 'start': None},
+                '107452444444444443344': {'total': 3634434, 'start': None}},
+            'sessions': {
+                '1165': {'108333970581444444444': {'total': 11, 'start': None},
+                         '108611793445444444444': {'total': 7, 'start': None},
+                         '107452622478444444444': {'total': 1, 'start': None},
+                         '102137775077444444444': {'total': 2, 'start': None},
+                         '100143115762444444444': {'total': 5, 'start': None}},
+                '1164': {
+                    '113445281444444444444': {'total': 1334300, 'start': None},
+                    '108333971444444444444': {'total': 5, 'start': None},
+                    '102137771444444444444': {'total': 3, 'start': None},
+                    '104470311444444444444': {'total': 14, 'start': None},
+                    '100958091444444444444': {'total': 13, 'start': None},
+                    '100143111444444444444': {'total': 6, 'start': None},
+                    '116228711444444444444': {'total': 31, 'start': None},
+                    '106432111444444444444': {'total': 16, 'start': None},
+                    '108611791444444444444': {'total': 9, 'start': None}}}},
+        'calendarId': 'member',
+        'previousVideoEmbeds': [],
+        '_rev': '379-e7ece17fd61440dc09ba79228bad6326',
+        'conferenceOverride': '',
+        'dateAndTime': None,
+        'sessionProvider': 'google',
+        'admins': [{'id': '113445282444444443343'},
+                   {'id': '102137775444444443348'}],
+        'open': False,
+        'title': 'Circling', 'whiteboard': {
+            'message': "Welcome everyone to event 333! Please foo!"},
+        'sessionsOpen': True,
+        'overflowUserCap': 20,
+        'id': None,
+        '_id': None,
+        'organizer': 'none'
+    }
+
+
+class EventEmpty(BaseCouchEventMock):
+    eventId = 444
+    dateAndTime = None
+
+    _resp_value = {}
+
+
 class User111(BaseCouchUserMock, BaseMongoUserMock):
     userId = 102137774477271133111
     givenName = 'John'
@@ -347,7 +427,7 @@ class User111(BaseCouchUserMock, BaseMongoUserMock):
 
     _participated_in = [
         MongoLogSetup(event_id=Event111.eventId,
-                      timestamps_from_earliest=[
+                      join_timestamps_from_earliest=[
                           '2016-05-12T16:53:36.363Z',
                           '2016-05-12T17:48:03.286Z',
                           '2016-05-12T17:50:35.528Z',
@@ -355,11 +435,25 @@ class User111(BaseCouchUserMock, BaseMongoUserMock):
                           '2016-05-12T19:01:16.784Z',
                       ]),
         MongoLogSetup(event_id=Event222.eventId,
-                      timestamps_from_earliest=[
+                      join_timestamps_from_earliest=[
                           '2016-07-02T16:59:56.186Z',
                           '2016-07-02T16:59:58.835Z',
                           '2016-07-02T17:00:21.574Z',
                           '2016-07-02T18:02:34.475Z',
+                      ]),
+        MongoLogSetup(event_id=Event333.eventId,
+                      join_timestamps_from_earliest=[
+                          '2016-03-03T16:59:56.186Z',
+                          '2016-03-03T16:59:58.835Z',
+                          '2016-03-03T17:00:21.574Z',
+                          '2016-03-03T18:02:34.475Z',
+                      ]),
+        MongoLogSetup(event_id=EventEmpty.eventId,
+                      join_timestamps_from_earliest=[
+                          '2016-02-28T15:58:56.186Z',
+                          '2016-02-28T16:59:58.835Z',
+                          '2016-02-28T17:00:21.574Z',
+                          '2016-02-28T18:02:34.475Z',
                       ]),
     ]
 
@@ -392,7 +486,7 @@ class User222(BaseCouchUserMock, BaseMongoUserMock):
 
     _participated_in = [
         MongoLogSetup(event_id=Event111.eventId,
-                      timestamps_from_earliest=[
+                      join_timestamps_from_earliest=[
                           '2016-05-12T14:46:04.450Z',
                           '2016-05-12T17:51:24.633Z',
                           '2016-05-12T19:01:01.030Z',
@@ -401,88 +495,78 @@ class User222(BaseCouchUserMock, BaseMongoUserMock):
     ]
 
 
-class ResponseFactory:
-    NOT_CALLED = 'not called'
-    sample_users = [
-        User111,
-        User222
+class User_2016_07_02(BaseCouchUserMock, BaseMongoUserMock):
+    userId = 102137774470020160702
+    givenName = 'Kevin'
+    familyName = 'Foo'
+    emails = [{'value': 'fake_kevin@gmail.com'}]
+
+    _couch_value = {
+        'perms': {'joinEvents': False,
+                  'createEvents': True},
+        'picture': 'https://lh4.googleusercontent.com/-yI/phot2o.jpg',
+        'link': 'https://plus.google.com/+Buba',
+        '_rev': '96-7b43ab17f2c85079aee44d8a077c2a5b',
+        'provider': 'google',
+        'isPlusUser': True,
+        'admin': False,
+        'displayName': None,
+        '_id': None,
+        'name': None,
+        'preferredContact': {},
+        'emails': None,
+        'superuser': False,
+        'createdViaHangout': False,
+        'id': None,
+        'networkList': {'65': ['11434645354444774444'],
+                        '240': ['1087437344444477444446'],
+                        '86': ['100597781244447744444']},
+        'google_json': None
+    }
+
+    _participated_in = [
+        MongoLogSetup(event_id=Event111.eventId,
+                      join_timestamps_from_earliest=[
+                          '2016-07-01T00:00:00.186Z',
+                          '2016-07-01T16:59:56.186Z',
+                          '2016-07-01T16:59:58.835Z',
+                          '2016-07-01T17:00:21.574Z',
+                          '2016-07-01T18:02:34.475Z',
+                          '2016-07-01T23:59:34.475Z',
+
+                          '2016-07-02T00:00:00.186Z',
+                          '2016-07-02T16:59:56.186Z',
+                          '2016-07-02T16:59:58.835Z',
+                          '2016-07-02T17:00:21.574Z',
+                          '2016-07-02T18:02:34.475Z',
+                          '2016-07-02T23:59:59.475Z',
+
+                          '2016-07-03T00:00:00.186Z',
+                          '2016-07-03T16:59:56.186Z',
+                          '2016-07-03T16:59:58.835Z',
+                          '2016-07-03T17:00:21.574Z',
+                          '2016-07-03T18:02:34.475Z',
+                          '2016-07-03T23:59:59.475Z',
+
+                          '2016-07-04T00:00:00.186Z',
+                          '2016-07-04T16:59:56.186Z',
+                          '2016-07-04T16:59:58.835Z',
+                          '2016-07-04T17:00:21.574Z',
+                          '2016-07-04T18:02:34.475Z',
+                          '2016-07-04T23:59:59.475Z',
+
+                          '2016-07-05T00:00:00.186Z',
+                          '2016-07-05T16:59:56.186Z',
+                          '2016-07-05T16:59:58.835Z',
+                          '2016-07-05T17:00:21.574Z',
+                          '2016-07-05T18:02:34.475Z',
+                          '2016-07-05T23:59:59.475Z',
+
+                          '2016-07-06T00:00:00.186Z',
+                          '2016-07-06T16:59:56.186Z',
+                          '2016-07-06T16:59:58.835Z',
+                          '2016-07-06T17:00:21.574Z',
+                          '2016-07-06T18:02:34.475Z',
+                          '2016-07-06T23:59:59.475Z',
+                      ]),
     ]
-    sample_events = [
-        Event111,
-        Event222
-    ]
-
-    @classmethod
-    def get_all_users_attending_event(cls, event_id):
-        ret = []
-
-        def user_attended(usr):
-            for event_attended in usr._participated_in:
-                if event_attended.event_id == event_id:
-                    return True
-            return False
-
-        for user in cls.sample_users:
-            if user_attended(user):
-                ret.append(user)
-
-        return ret
-
-    @classmethod
-    def get_users_for_given_event_class(cls, event_list):
-        """
-        Retrun dict:
-            {Event_class: [User1, User2, ..], ...], Event_2: [], }
-        :param event_list: List of Sample event class
-        :return:
-        """
-        ret = {}
-        for event_class in event_list:
-            users = cls.get_all_users_attending_event(event_id=event_class.eventId)
-            ret[event_class] = users
-        return ret
-
-    @classmethod
-    def get_all_mongo_logs(cls):
-        ret = []
-        for sample_user in cls.sample_users:
-            ret.extend(sample_user.get_mongo_response())
-        return ret
-
-    @classmethod
-    def get_all_couch_responses(cls):
-        ret = []
-        for sample_user in cls.sample_users:
-            ret.append(sample_user.get_couch_mock())
-        for sample_event in cls.sample_events:
-            ret.append(sample_event.get_couch_mock())
-        return ret
-
-    @classmethod
-    def mongo_get_data_side_effect(cls, event_ids=NOT_CALLED,
-                                   user_ids=NOT_CALLED):
-        # print('called mongo_side_effect with:', {'event_ids': event_ids,
-        #                                          'user_ids': user_ids})
-
-        event_ids, user_ids = make_iterable(evnt_ids=event_ids,
-                                            usr_ids=user_ids)
-        ret = [entry for entry in cls.get_all_mongo_logs()
-               if entry['eventId'] in event_ids or entry['userId'] in user_ids]
-        return ret
-
-    @classmethod
-    def couch_get_data_side_effect(cls, event_ids=NOT_CALLED,
-                                   user_ids=NOT_CALLED):
-        # print('called couch_side_effect with:', {'event_ids': event_ids,
-        #                                          'user_ids': user_ids})
-
-        event_ids, user_ids = make_iterable(evnt_ids=event_ids,
-                                            usr_ids=user_ids)
-        # Default value is None or string from it
-        selected_ids = [each for each in event_ids + user_ids
-                        if each not in ('None', None)]
-
-        # Check if row is for what we've asked
-        ret = [row for row in cls.get_all_couch_responses()
-               if row.key in selected_ids]
-        return ret
