@@ -1,11 +1,11 @@
 import logging
 import os
 import sys
-from unittest import TestCase, skip
+from unittest import TestCase
 from unittest.mock import patch
 
 import ca_analytics
-from example_data import Event111, Event222, Event333
+from example_data import Event111, Event222, Event333, EventEmpty
 from helpers import DbPatcherMixin
 
 rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
@@ -89,13 +89,46 @@ class TestOrderByEventsPresentInDB(DbPatcherMixin, TestCase):
 
 class TestOrderByEventsNotInDB(DbPatcherMixin, TestCase):
     def setUp(self):
-        self.patcher_get_ca_event_list = patch.object(ca_analytics,
-                                                      'get_ca_event_list')
-        self.mock_get_ca_event_list = self.patcher_get_ca_event_list.start()
+        self.patcher_output_handler = patch.object(ca_analytics,
+                                                   'OutputHandler')
+        self.mock_output_handler = self.patcher_output_handler.start()
+
         super().setUp()
 
     def test_should_assign_first_join_timestamp_as_event_start(self):
-        pass
+        # GIVEN
+        expected_event = EventEmpty
+
+        cli_cmd = '-e %s --order_by event_id' % expected_event.eventId
+        cli_cmd = cli_cmd.split()
+
+        # WHEN
+        ca_analytics.main(start_cmd=cli_cmd)
+
+        # THEN
+        ca_event = self.get_script_processed_data()[0]
+        timestamps = ca_event._event_participants.get_join_timestamps()
+
+        event_start_time = ca_event.start_time
+        first_participant_timestamp = timestamps[0]
+
+        self.assertEqual(first_participant_timestamp, event_start_time)
 
     def test_should_assign_last_join_timestamp_as_event_end(self):
-        pass
+        # GIVEN
+        expected_event = EventEmpty
+
+        cli_cmd = '-e %s --order_by event_id' % expected_event.eventId
+        cli_cmd = cli_cmd.split()
+
+        # WHEN
+        ca_analytics.main(start_cmd=cli_cmd)
+
+        # THEN
+        ca_event = self.get_script_processed_data()[0]
+        timestamps = ca_event._event_participants.get_join_timestamps()
+
+        event_end_time = ca_event.end_time
+        last_participant_timestamp = timestamps[-1]
+
+        self.assertEqual(last_participant_timestamp, event_end_time)
