@@ -8,7 +8,8 @@ log = logging.getLogger(__name__)
 
 
 class MongoData:
-    _filter_join_events = {'action': 'join', 'message': 'events'}
+    _filter_join_events = {'message': 'events',
+                           'action': {'$in': ['join', 'leave']}}
     _TIME_TEMPLATE = '%sT00:00:00.000Z'
     db_mongo = None
 
@@ -127,11 +128,10 @@ class MongoData:
         question = self.filter_join_events
 
         if event_ids is not None:
-            question["eventId"] = self._search_in(event_ids)
+            question['eventId'] = self._search_in(event_ids)
         if user_ids is not None:
-            question["userId"] = self._search_in(user_ids, cast=str)
+            question['userId'] = self._search_in(user_ids, cast=str)
         # Else whole db is downloaded for 'action': 'join'
-
         ret = list(self.db_mongo.analytics.find(question))
         return ret
 
