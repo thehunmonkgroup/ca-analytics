@@ -125,6 +125,9 @@ class ResponseFactory:
 
 
 class DbPatcherMixin:
+    # TODO: Join timestamp present, leave not, and the other way around
+    # TODO: Event start/end time approximation when for ^those^ 4 cases
+
     # TODO: Fail with: 00494, 00323: No event for id [00494] found in CouchDB
     # TODO: Test for select event&user
     # TODO: Test for show users' events
