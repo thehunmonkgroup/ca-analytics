@@ -1,3 +1,4 @@
+import inspect
 import logging
 import operator
 from collections import defaultdict, namedtuple
@@ -9,8 +10,7 @@ from lib.extras import STRFTIME_FORMAT, Setts
 
 log = logging.getLogger(__name__)
 
-ParticipantTimestamp = namedtuple('ParticipantTimestamp',
-                                  ('join', 'leave'))
+ParticipantTimestamp = namedtuple('ParticipantTimestamp', ('join', 'leave'))
 
 
 class EventParticipantsHandler:
@@ -141,32 +141,23 @@ class CaParticipant:
     @property
     def timestamp(self):
         # This is based on the premise that logs will come in desc order
-        join = None
-        leave = None
-        try:
-            join = self.action_join_list[0].timestamp
-        except IndexError as e:
-            log.debug('No join logs. Setting join time to None. It should be '
-                      'overwritten with leave timestamp if present. '
-                      'Error [%s]', e)
-        try:
-            leave = self.action_leave_list[-1].timestamp
-            if join is None:
-                log.warning('Setting join timestamp same as leave [%s], '
-                            'as there is not log for join action. '
-                            'User [%s]', leave, self.__str__())
-                join = leave
-        except IndexError as e:
-            if join is None:
-                raise RuntimeError(
-                    'Something is wrong, no join or leave timestamp. '
-                    'UserInfo [%s]', self.__str__())
-            log.debug(
-                'No leave timestamp. Setting join [%s] as left timestamp. '
-                'Error [%s]', join, e)
-            leave = join
+        def get_timestamp(getter_function):
+            try:
+                return getter_function()
+            except IndexError as e:
+                log.debug(
+                    'No timestamp for [%s]. Probably there were no logs '
+                    'for this user [%s]. Error [%s]',
+                    inspect.getsource(getter_function).strip(),
+                    self.__str__(), e)
 
-        return ParticipantTimestamp(join=join, leave=leave)
+        join = get_timestamp(
+            getter_function=lambda: self.action_join_list[0].timestamp)
+        leave = get_timestamp(
+            getter_function=lambda: self.action_leave_list[-1].timestamp)
+
+        timestamp = ParticipantTimestamp(join=join, leave=leave)
+        return timestamp
 
     def add(self, log_entry):
         self.user_id = log_entry[MongoFields.USER_ID]
