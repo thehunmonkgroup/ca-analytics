@@ -205,7 +205,7 @@ class DbPatcherMixin:
             self.assertEqual(user.user_id, expected_user.userId)
             self.assertEqual(user.display_name, expected_user.display_name)
             self.assertEqual(
-                user.timestamp,
+                user.timestamp.join,
                 expected_user.get_earliest_timestamp(event_id=event_id),
                 msg='Timestamps mismatch. User was logged earlier!'
             )
