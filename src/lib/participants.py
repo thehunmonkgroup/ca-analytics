@@ -10,7 +10,7 @@ from lib.extras import STRFTIME_FORMAT, Setts
 log = logging.getLogger(__name__)
 
 
-class ParticipantsHandler:
+class EventParticipantsHandler:
     """
     Important handler class for users attending the event.
     Knows about all users from this event.
@@ -18,11 +18,11 @@ class ParticipantsHandler:
     If you want to get all users from particular event, you must change hash
       algorithm of the CaUser class, so that set() won't throw it out.
     """
-    _participant_list = None
+    # _all_participant_log_list = None
     _participant_dict = None
 
     def __init__(self):
-        self._participant_list = []
+        # self._all_participant_log_list = []
         self._participant_dict = defaultdict(CaParticipant)
 
     @property
@@ -38,6 +38,15 @@ class ParticipantsHandler:
     def unique_ids(self):
         ids = (x.user_id for x in self.unique)
         return sorted(set(ids))
+
+    @property
+    def all_participant_log_list(self):
+        """ Reconstruct log entries from MongoDB. """
+        all_logs = []
+        for ca_participant in self._participant_dict.values():
+            all_logs.extend(ca_participant.action_join_list)
+            all_logs.extend(ca_participant.action_leave_list)
+        return sorted(all_logs, key=lambda o: o.timestamp)
 
     def get_join_timestamps(self, join_sort_key=None):
         """
@@ -64,7 +73,7 @@ class ParticipantsHandler:
         :return:
         """
         if self._participant_list is None:
-            log.warning('Accessing uninitialized user list')
+            log.warning('Accessing uninitialized user dict')
             return []
         else:
             # Sort two times. First so that set() will memorize first correct
@@ -76,15 +85,15 @@ class ParticipantsHandler:
         participant_id = log_entry['userId']
         self._participant_dict[participant_id].add(log_entry)
 
-        ca_participant = CaParticipantLogEntry(log_entry=log_entry)
-        self._participant_list.append(ca_participant)
+        # ca_participant = CaParticipantLogEntry(log_entry=log_entry)
+        # self._participant_list.append(ca_participant)
 
 
 class CaParticipant:
     _user_id = None
 
-    _action_join_list = None
-    _action_leave_list = None
+    action_join_list = None
+    action_leave_list = None
 
     _ACTION_JOIN = 'join'
     _ACTION_LEAVE = 'leave'
@@ -102,20 +111,13 @@ class CaParticipant:
         """
         # Be careful if you want to change it to dict - hashing of
         #   `CaParticipantLogEntry` may remove entries from dict.
-        self._action_join_list = []
-        self._action_leave_list = []
+        self.action_join_list = []
+        self.action_leave_list = []
 
     @property
     def user_id(self):
         """ It'e here cos we want to check if log is for correct user. """
         return self._user_id
-
-    @property
-    def event_id(self):
-        """ Pick `event_id` from first parsed log entry. """
-        # Maybe one or the other is empty
-        users_to_check = self._action_join_list or self._action_leave_list
-        return users_to_check[0].event_id
 
     @user_id.setter
     def user_id(self, value):
@@ -127,22 +129,29 @@ class CaParticipant:
             log.error(self._error_msg_change,
                       MongoFields.USER_ID, self.user_id, self._user_id, value)
 
+    @property
+    def event_id(self):
+        """ Pick `event_id` from first parsed log entry. """
+        # Maybe one or the other is empty
+        users_to_check = self.action_join_list or self.action_leave_list
+        return users_to_check[0].event_id
+
     def add(self, log_entry):
         self.user_id = log_entry[MongoFields.USER_ID]
 
         ca_participant = CaParticipantLogEntry(log_entry=log_entry)
         if ca_participant.action == self._ACTION_JOIN:
-            self._action_join_list.append(ca_participant)
+            self.action_join_list.append(ca_participant)
         elif ca_participant.action == self._ACTION_LEAVE:
-            self._action_leave_list.append(ca_participant)
+            self.action_leave_list.append(ca_participant)
         else:
             raise RuntimeError(
                 'Unrecognized action [{}] for log_entry [{}]'.format(
                     ca_participant.action, log_entry))
 
     def __str__(self):
-        data_for_templ = (self.user_id, len(self._action_join_list),
-                          len(self._action_leave_list), self.event_id)
+        data_for_templ = (self.user_id, len(self.action_join_list),
+                          len(self.action_leave_list), self.event_id)
         return self._str_templ % data_for_templ
 
     __repr__ = __str__
@@ -283,5 +292,5 @@ class CaParticipantLogEntry:
         return self._str_representation_templ % data_for_templ
 
     def __repr__(self):
-        return 'user [%s]@[%s] name [%s]' % (self.user_id, self.timestamp_str,
-                                             self.display_name)
+        return 'User [%s]@[%s] [%s] name [%s]' % (
+            self.user_id, self.timestamp_str, self.action, self.display_name)

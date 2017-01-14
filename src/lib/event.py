@@ -11,7 +11,7 @@ from lib.extras import (
     Setts,
     STRFTIME_FORMAT,
 )
-from lib.participants import ParticipantsHandler
+from lib.participants import EventParticipantsHandler
 
 log = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ class CaEvent:
         self._raw_details = Setts.details_provider[event_id]
 
         # Setup users
-        self._event_participants = ParticipantsHandler()
+        self._event_participants = EventParticipantsHandler()
         self.add = self._event_participants.add
 
     @property
