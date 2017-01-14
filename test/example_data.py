@@ -499,7 +499,7 @@ class User_2016_07_02(BaseCouchUserMock, BaseMongoUserMock):
     }
 
     _participated_in = [
-        MongoLogSetup(event_id=Event222.eventId,
+        MongoLogSetup(event_id=Event111.eventId,
                       join_timestamps_from_earliest=[
                           '2016-07-01T00:00:00.186Z',
                           '2016-07-01T16:59:56.186Z',

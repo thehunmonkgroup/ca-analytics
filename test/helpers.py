@@ -206,3 +206,52 @@ class DbPatcherMixin:
                 expected_user.get_earliest_timestamp(event_id=event_id),
                 msg='Timestamps mismatch. User was logged earlier!'
             )
+
+    def check_if_participants_in_alphabetical_order(self, ca_events):
+        for ca_event in ca_events:
+            expected_users = self.get_users_in_alphabetical_order(ca_event)
+            actual_users = ca_event.event_participants()
+            users = (expected_users, actual_users)
+
+            self.assertEqual(len(expected_users), len(actual_users))
+
+            for expected_usr, actual_usr in zip(*users):
+                self.assertEqual(expected_usr.userId, actual_usr.user_id,
+                                 msg='Users are not in alphabetical order!')
+                self.assertEqual(expected_usr.display_name,
+                                 actual_usr.display_name)
+
+    @classmethod
+    def get_users_in_alphabetical_order(cls, ca_event):
+        ca_event_id = ca_event.event_id
+        real_event_participants = (ResponseFactory.
+                                   get_all_users_attending_event(ca_event_id))
+        sorted_participants = sorted(real_event_participants,
+                                     key=lambda x: x.display_name)
+        return sorted_participants
+
+    def check_if_participants_in_join_order(self, ca_events):
+        # @TODO: Refactor with check_if_participants_in_alphabetical_order
+        for ca_event in ca_events:
+            expected_users = self.get_users_in_join_order(ca_event)
+            actual_users = ca_event.event_participants()
+            users = (expected_users, actual_users)
+
+            self.assertEqual(len(expected_users), len(actual_users))
+
+            for expected_usr, actual_usr in zip(*users):
+                self.assertEqual(expected_usr.userId, actual_usr.user_id,
+                                 msg='Users are not in join order!')
+                self.assertEqual(expected_usr.display_name,
+                                 actual_usr.display_name)
+
+    @classmethod
+    def get_users_in_join_order(cls, ca_event):
+        # TODO: Refactor with get_users_in_alphabetical_order
+        ca_event_id = ca_event.event_id
+        real_event_participants = (ResponseFactory.
+                                   get_all_users_attending_event(ca_event_id))
+        sorted_participants = sorted(
+            real_event_participants,
+            key=lambda x: x.get_earliest_timestamp(event_id=ca_event_id))
+        return sorted_participants
