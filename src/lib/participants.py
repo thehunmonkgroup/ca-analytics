@@ -18,12 +18,18 @@ class EventParticipantsHandler:
     If you want to get all users from particular event, you must change hash
       algorithm of the CaUser class, so that set() won't throw it out.
     """
-    # _all_participant_log_list = None
     _participant_dict = None
 
     def __init__(self):
-        # self._all_participant_log_list = []
         self._participant_dict = defaultdict(CaParticipant)
+
+    def add(self, log_entry):
+        participant_id = log_entry['userId']
+        self._participant_dict[participant_id].add(log_entry)
+
+    def get_participants(self):
+        # TODO: return sorted by id default?
+        return list(self._participant_dict.values())
 
     @property
     def unique(self):
@@ -33,11 +39,6 @@ class EventParticipantsHandler:
 
         # Dispose of all redundant participant logs, but leave first occurance
         return sorted(set(all_sorted), key=sorting_key)
-
-    @property
-    def unique_ids(self):
-        ids = (x.user_id for x in self.unique)
-        return sorted(set(ids))
 
     @property
     def all_participant_log_list(self):
@@ -56,13 +57,13 @@ class EventParticipantsHandler:
         :param join_sort_key:
         :return:
         """
+        # TODO: Only joined!
         join_sort_key = (join_sort_key or
                          operator.attrgetter(Setts._OrderByOpt.OUR_JOIN_TIME))
 
         participant_join_timestamps = tuple(
             participant.timestamp for participant
             in self.get_all_sorted(sort_key=join_sort_key))
-
         return participant_join_timestamps
 
     def get_all_sorted(self, sort_key=Setts.ORDER_BY.participant_sort_keys):
@@ -72,21 +73,18 @@ class EventParticipantsHandler:
 
         :return:
         """
-        if self._participant_list is None:
+        if not self.all_participant_log_list:
             log.warning('Accessing uninitialized user dict')
             return []
         else:
             # Sort two times. First so that set() will memorize first correct
             #   object. Second cos set() is not preserving order.
-            all_sorted = sorted(self._participant_list, key=sort_key)
+            all_sorted = sorted(self.all_participant_log_list, key=sort_key)
             return all_sorted
 
-    def add(self, log_entry):
-        participant_id = log_entry['userId']
-        self._participant_dict[participant_id].add(log_entry)
 
-        # ca_participant = CaParticipantLogEntry(log_entry=log_entry)
-        # self._participant_list.append(ca_participant)
+
+
 
 
 class CaParticipant:

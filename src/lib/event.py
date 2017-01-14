@@ -26,8 +26,8 @@ class CaEvent:
     _end_time = None
 
     # Handle participants
-    _event_participants = None
-    add = None  # It'll be _event_participants.add
+    _participants_handler = None
+    add_participant = None  # It'll be _event_participants.add
 
     # Details storage variables
     _raw_details = None
@@ -70,8 +70,8 @@ class CaEvent:
         self._raw_details = Setts.details_provider[event_id]
 
         # Setup users
-        self._event_participants = EventParticipantsHandler()
-        self.add = self._event_participants.add
+        self._participants_handler = EventParticipantsHandler()
+        self.add_participant = self._participants_handler.add
 
     @property
     def event_id(self):
@@ -115,7 +115,7 @@ class CaEvent:
         try:
             self._start_time = dateutil.parser.parse(raw_value)
         except AttributeError as e:
-            first_timestamp = self._event_participants.get_join_timestamps()[0]
+            first_timestamp = self._participants_handler.get_join_timestamps()[0]
             self._start_time = first_timestamp
 
             log_handler = self._get_log_handler(
@@ -145,7 +145,7 @@ class CaEvent:
         except TypeError as e:
             # TODO: When leave time will be implemented for the users,
             #       change it to the last user leaving
-            last_timestamp = self._event_participants.get_join_timestamps()[-1]
+            last_timestamp = self._participants_handler.get_join_timestamps()[-1]
             self._end_time = last_timestamp
             duration = self._end_time - self.start_time
 
@@ -165,7 +165,8 @@ class CaEvent:
             return self.start_time_str
 
     def event_participants(self):
-        return self._event_participants.unique
+        return self._participants_handler.get_participants()
+        # return self._participants_handler.unique
 
     @property
     def participants_number(self):
