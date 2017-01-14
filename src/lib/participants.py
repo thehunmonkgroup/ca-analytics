@@ -1,5 +1,6 @@
 import logging
 import operator
+from collections import defaultdict
 
 import dateutil.parser
 
@@ -22,7 +23,7 @@ class ParticipantsHandler:
 
     def __init__(self):
         self._participant_list = []
-        self._participant_dict = {}
+        self._participant_dict = defaultdict(CaParticipant)
 
     @property
     def unique(self):
@@ -72,14 +73,85 @@ class ParticipantsHandler:
             return all_sorted
 
     def add(self, log_entry):
+        participant_id = log_entry['userId']
+        self._participant_dict[participant_id].add(log_entry)
 
         ca_participant = CaParticipantLogEntry(log_entry=log_entry)
         self._participant_list.append(ca_participant)
 
 
+class CaParticipant:
+    _user_id = None
+
+    _action_join_list = None
+    _action_leave_list = None
+
+    _ACTION_JOIN = 'join'
+    _ACTION_LEAVE = 'leave'
+
+    _str_templ = 'User [%s] jumped in [%s]/[%s] out times from event [%s]'
+    _error_msg_change = (
+        'Tried to change [%s] of the user [%s]! [%s]->[%s]. '
+        'This should never happen. Statistics may be corrupted.'
+    )
+
+    def __init__(self):
+        """
+        This class stores users all actions, join/leave.
+        Supported actions: 'join' | 'leave'
+        """
+        # Be careful if you want to change it to dict - hashing of
+        #   `CaParticipantLogEntry` may remove entries from dict.
+        self._action_join_list = []
+        self._action_leave_list = []
+
+    @property
+    def user_id(self):
+        """ It'e here cos we want to check if log is for correct user. """
+        return self._user_id
+
+    @property
+    def event_id(self):
+        """ Pick `event_id` from first parsed log entry. """
+        # Maybe one or the other is empty
+        users_to_check = self._action_join_list or self._action_leave_list
+        return users_to_check[0].event_id
+
+    @user_id.setter
+    def user_id(self, value):
+        """ Sets EventId for this class. """
+        value = int(value)
+        if self._user_id is None:
+            self._user_id = value
+        elif self._user_id != value:
+            log.error(self._error_msg_change,
+                      MongoFields.USER_ID, self.user_id, self._user_id, value)
+
+    def add(self, log_entry):
+        self.user_id = log_entry[MongoFields.USER_ID]
+
+        ca_participant = CaParticipantLogEntry(log_entry=log_entry)
+        if ca_participant.action == self._ACTION_JOIN:
+            self._action_join_list.append(ca_participant)
+        elif ca_participant.action == self._ACTION_LEAVE:
+            self._action_leave_list.append(ca_participant)
+        else:
+            raise RuntimeError(
+                'Unrecognized action [{}] for log_entry [{}]'.format(
+                    ca_participant.action, log_entry))
+
+    def __str__(self):
+        data_for_templ = (self.user_id, len(self._action_join_list),
+                          len(self._action_leave_list), self.event_id)
+        return self._str_templ % data_for_templ
+
+    __repr__ = __str__
+
+
 class CaParticipantLogEntry:
     # Log entries
     _user_id = None
+    _event_id = None
     action = None
     _timestamp = None
     _timestamp_str = None
@@ -112,6 +184,7 @@ class CaParticipantLogEntry:
         :param log_entry:
         """
         self.user_id = log_entry[MongoFields.USER_ID]
+        self.event_id = log_entry[MongoFields.EVENT_ID]
         self.action = log_entry[MongoFields.ACTION]
 
         self._raw_log_entry = log_entry
@@ -124,12 +197,29 @@ class CaParticipantLogEntry:
     @user_id.setter
     def user_id(self, value):
         """ Sets EventId for this class. """
+        # TODO: Here validation is probably not needed as one instance of
+        #       the class corresponds to one log_entry
         value = int(value)
         if self._user_id is None:
             self._user_id = value
         elif self._user_id != value:
             log.error(self._error_msg_change,
-                      'user_id', self.user_id, self._user_id, value)
+                      MongoFields.USER_ID, self.user_id, self._user_id, value)
+
+    @property
+    def event_id(self):
+        """ It'e here cos we want to check if log is for correct user. """
+        return self._event_id
+
+    @event_id.setter
+    def event_id(self, value):
+        """ Sets EventId for this class. """
+        value = int(value)
+        if self._event_id is None:
+            self._event_id = value
+        elif self._event_id != value:
+            log.error(self._error_msg_change,
+                      'event_id', self.user_id, self._event_id, value)
 
     @property
     def timestamp(self):
