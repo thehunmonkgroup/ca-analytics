@@ -1,6 +1,6 @@
 import logging
 import operator
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 
 import dateutil.parser
 
@@ -8,6 +8,9 @@ from lib.database import MongoFields, UserFields
 from lib.extras import STRFTIME_FORMAT, Setts
 
 log = logging.getLogger(__name__)
+
+ParticipantTimestamp = namedtuple('ParticipantTimestamp',
+                                  ('join', 'leave'))
 
 
 class EventParticipantsHandler:
@@ -83,10 +86,6 @@ class EventParticipantsHandler:
             return all_sorted
 
 
-
-
-
-
 class CaParticipant:
     _user_id = None
 
@@ -102,10 +101,14 @@ class CaParticipant:
         'This should never happen. Statistics may be corrupted.'
     )
 
+    # This reference is just for easy details retrieval
+    # TODO: Move data from CaPartLog model to here?
+    __user_data_reference = None
+
     def __init__(self):
         """
-        This class stores users all actions, join/leave.
-        Supported actions: 'join' | 'leave'
+        This is class for Participant. It should sore all constant info
+        about user, as well as supported user actions: join/leave.
         """
         # Be careful if you want to change it to dict - hashing of
         #   `CaParticipantLogEntry` may remove entries from dict.
@@ -129,10 +132,41 @@ class CaParticipant:
 
     @property
     def event_id(self):
-        """ Pick `event_id` from first parsed log entry. """
-        # Maybe one or the other is empty
-        users_to_check = self.action_join_list or self.action_leave_list
-        return users_to_check[0].event_id
+        return self.__user_data_reference.event_id
+
+    @property
+    def display_name(self):
+        return self.__user_data_reference.display_name
+
+    @property
+    def timestamp(self):
+        # This is based on the premise that logs will come in desc order
+        join = None
+        leave = None
+        try:
+            join = self.action_join_list[0].timestamp
+        except IndexError as e:
+            log.debug('No join logs. Setting join time to None. It should be '
+                      'overwritten with leave timestamp if present. '
+                      'Error [%s]', e)
+        try:
+            leave = self.action_leave_list[-1].timestamp
+            if join is None:
+                log.warning('Setting join timestamp same as leave [%s], '
+                            'as there is not log for join action. '
+                            'User [%s]', leave, self.__str__())
+                join = leave
+        except IndexError as e:
+            if join is None:
+                raise RuntimeError(
+                    'Something is wrong, no join or leave timestamp. '
+                    'UserInfo [%s]', self.__str__())
+            log.debug(
+                'No leave timestamp. Setting join [%s] as left timestamp. '
+                'Error [%s]', join, e)
+            leave = join
+
+        return ParticipantTimestamp(join=join, leave=leave)
 
     def add(self, log_entry):
         self.user_id = log_entry[MongoFields.USER_ID]
@@ -146,6 +180,8 @@ class CaParticipant:
             raise RuntimeError(
                 'Unrecognized action [{}] for log_entry [{}]'.format(
                     ca_participant.action, log_entry))
+        if self.__user_data_reference is None:
+            self.__user_data_reference = ca_participant
 
     def __str__(self):
         data_for_templ = (self.user_id, len(self.action_join_list),
