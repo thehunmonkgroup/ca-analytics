@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 from os.path import join as j
+from pprint import pprint
 
 from lib.database import init_db
 from lib.engine import get_ca_event_list
@@ -21,9 +22,10 @@ log = logging.getLogger(__name__)
 def evaluate_arguments():
     db_data = Setts._DB_MONGO.value.get_data(event_ids=Setts.EVENT.value,
                                              user_ids=Setts.USER.value)
-    db_data = Setts._DB_MONGO.value.filter_date(data=db_data,
-                                                date_from=Setts.DATE_FROM.value,
-                                                date_to=Setts.DATE_TO.value)
+    db_data = Setts._DB_MONGO.value.filter_date(
+        data=db_data, date_from=Setts.DATE_FROM.value,
+        date_to=Setts.DATE_TO.value)
+
     event_list = get_ca_event_list(selected_logs=db_data)
 
     printer = OutputHandler(ca_events_list=event_list)
@@ -40,6 +42,7 @@ def evaluate_arguments():
 
 def main(start_cmd=None):
     # start_cmd = '-e 513 523 -u 104470315585625006456'.split()
+    # start_cmd = '-e 513 523'.split()
     # start_cmd = ''.split()
     args, parser = configure_argparse(rwd=rwd, start_cmd=start_cmd)
 

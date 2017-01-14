@@ -9,7 +9,75 @@ from lib.extras import STRFTIME_FORMAT, Setts
 log = logging.getLogger(__name__)
 
 
-class CaParticipant:
+class ParticipantsHandler:
+    """
+    Important handler class for users attending the event.
+    Knows about all users from this event.
+
+    If you want to get all users from particular event, you must change hash
+      algorithm of the CaUser class, so that set() won't throw it out.
+    """
+    _participant_list = None
+    _participant_dict = None
+
+    def __init__(self):
+        self._participant_list = []
+        self._participant_dict = {}
+
+    @property
+    def unique(self):
+        sorting_key = Setts.ORDER_BY.participant_sort_keys
+
+        all_sorted = self.get_all_sorted(sort_key=sorting_key)
+
+        # Dispose of all redundant participant logs, but leave first occurance
+        return sorted(set(all_sorted), key=sorting_key)
+
+    @property
+    def unique_ids(self):
+        ids = (x.user_id for x in self.unique)
+        return sorted(set(ids))
+
+    def get_join_timestamps(self, join_sort_key=None):
+        """
+        Return join timestamps in descending order, unless join_sort_key will
+          sort it differently.
+
+        :param join_sort_key:
+        :return:
+        """
+        join_sort_key = (join_sort_key or
+                         operator.attrgetter(Setts._OrderByOpt.OUR_JOIN_TIME))
+
+        participant_join_timestamps = tuple(
+            participant.timestamp for participant
+            in self.get_all_sorted(sort_key=join_sort_key))
+
+        return participant_join_timestamps
+
+    def get_all_sorted(self, sort_key=Setts.ORDER_BY.participant_sort_keys):
+        """
+        Return deduplicated users with earliest time they joined an event and
+         sorted id ascending.
+
+        :return:
+        """
+        if self._participant_list is None:
+            log.warning('Accessing uninitialized user list')
+            return []
+        else:
+            # Sort two times. First so that set() will memorize first correct
+            #   object. Second cos set() is not preserving order.
+            all_sorted = sorted(self._participant_list, key=sort_key)
+            return all_sorted
+
+    def add(self, log_entry):
+
+        ca_participant = CaParticipantLogEntry(log_entry=log_entry)
+        self._participant_list.append(ca_participant)
+
+
+class CaParticipantLogEntry:
     # Log entries
     _user_id = None
     action = None
@@ -127,68 +195,3 @@ class CaParticipant:
     def __repr__(self):
         return 'user [%s]@[%s] name [%s]' % (self.user_id, self.timestamp_str,
                                              self.display_name)
-
-
-class ParticipantsHandler:
-    """
-    Important handler class for users attending the event.
-    Knows about all users from this event.
-
-    If you want to get all users from particular event, you must change hash
-      algorithm of the CaUser class, so that set() won't throw it out.
-    """
-    _participant_list = None
-
-    def __init__(self):
-        self._participant_list = []
-
-    @property
-    def unique(self):
-        sorting_key = Setts.ORDER_BY.participant_sort_keys
-
-        all_sorted = self.get_all_sorted(sort_key=sorting_key)
-
-        # Dispose of all redundant participant logs, but leave first occurance
-        return sorted(set(all_sorted), key=sorting_key)
-
-    @property
-    def unique_ids(self):
-        ids = (x.user_id for x in self.unique)
-        return sorted(set(ids))
-
-    def get_join_timestamps(self, join_sort_key=None):
-        """
-        Return join timestamps in descending order, unless join_sort_key will
-          sort it differently.
-
-        :param join_sort_key:
-        :return:
-        """
-        join_sort_key = (join_sort_key or
-                         operator.attrgetter(Setts._OrderByOpt.OUR_JOIN_TIME))
-
-        participant_join_timestamps = tuple(
-            participant.timestamp for participant
-            in self.get_all_sorted(sort_key=join_sort_key))
-
-        return participant_join_timestamps
-
-    def get_all_sorted(self, sort_key=Setts.ORDER_BY.participant_sort_keys):
-        """
-        Return deduplicated users with earliest time they joined an event and
-         sorted id ascending.
-
-        :return:
-        """
-        if self._participant_list is None:
-            log.warning('Accessing uninitialized user list')
-            return []
-        else:
-            # Sort two times. First so that set() will memorize first correct
-            #   object. Second cos set() is not preserving order.
-            all_sorted = sorted(self._participant_list, key=sort_key)
-            return all_sorted
-
-    def add(self, log_entry):
-        ca_participant = CaParticipant(log_entry=log_entry)
-        self._participant_list.append(ca_participant)
