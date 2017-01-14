@@ -95,7 +95,8 @@ class CaParticipant:
     _ACTION_JOIN = 'join'
     _ACTION_LEAVE = 'leave'
 
-    _str_templ = 'User [%s] jumped in [%s]/[%s] out times from event [%s]'
+    _str_templ = 'User: [%s] - [%s], Joined/Left: [%s] / [%s]'
+    _repr_templ = 'User@event [%s]@[%s] jumped in [%s]/[%s] out times'
     _error_msg_change = (
         'Tried to change [%s] of the user [%s]! [%s]->[%s]. '
         'This should never happen. Statistics may be corrupted.'
@@ -145,17 +146,31 @@ class CaParticipant:
             try:
                 return getter_function()
             except IndexError as e:
-                log.debug(
-                    'No timestamp for [%s]. Probably there were no logs '
-                    'for this user [%s]. Error [%s]',
-                    inspect.getsource(getter_function).strip(),
-                    self.__str__(), e)
+                log.debug('No timestamp for [%s]. Probably there were no logs '
+                          'for this action for user [%s]. Error [%s]',
+                          inspect.getsource(getter_function).strip(),
+                          self.user_id, e)
 
         join = get_timestamp(
             getter_function=lambda: self.action_join_list[0].timestamp)
         leave = get_timestamp(
             getter_function=lambda: self.action_leave_list[-1].timestamp)
 
+        timestamp = ParticipantTimestamp(join=join, leave=leave)
+        return timestamp
+
+    @property
+    def timestamp_str(self):
+        def get_str(date_timestamp):
+            try:
+                return date_timestamp.strftime(STRFTIME_FORMAT)
+            except Exception as e:
+                log.debug(e)
+                return str(date_timestamp)
+
+        join, leave = self.timestamp
+        join = get_str(date_timestamp=join)
+        leave = get_str(date_timestamp=leave)
         timestamp = ParticipantTimestamp(join=join, leave=leave)
         return timestamp
 
@@ -175,11 +190,14 @@ class CaParticipant:
             self.__user_data_reference = ca_participant
 
     def __str__(self):
-        data_for_templ = (self.user_id, len(self.action_join_list),
-                          len(self.action_leave_list), self.event_id)
+        data_for_templ = (self.user_id, self.display_name, *self.timestamp_str)
         return self._str_templ % data_for_templ
 
-    __repr__ = __str__
+    def __repr__(self):
+        data_for_templ = (self.user_id, self.event_id,
+                          len(self.action_join_list),
+                          len(self.action_leave_list))
+        return self._repr_templ % data_for_templ
 
 
 class CaParticipantLogEntry:
@@ -203,6 +221,7 @@ class CaParticipantLogEntry:
         'Tried to change [%s] of the user [%s]! [%s]->[%s]. '
         'This should never happen. Statistics may be corrupted.'
     )
+    # TODO: remove
     _str_representation_templ = 'User: [%s] - [%s], Joined: [%s]'
 
     def __init__(self, log_entry):
