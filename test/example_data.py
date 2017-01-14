@@ -179,11 +179,23 @@ class BaseMongoUserMock(metaclass=ABCMeta):
 
     @classmethod
     def get_earliest_timestamp(cls, event_id):
-        # dateutil.parser.parse
+        return cls._get_timestamp(event_id=event_id, date_index=0)
+
+    @classmethod
+    def get_latest_timestamp(cls, event_id):
+        return cls._get_timestamp(event_id=event_id, date_index=-1)
+
+    @classmethod
+    def _get_timestamp(cls, event_id, date_index=0):
+        """
+        :param event_id:
+        :param date_index: 0: earliest, -1: latest timestamp
+        :return:
+        """
         event = [e for e in cls._participated_in if e.event_id == event_id][0]
-        earliest_timestamp = event.join_timestamps_from_earliest[0]
+        timestamp = event.join_timestamps_from_earliest[date_index]
         # earliest_timestamp = '2016-05-12T17:51:24.633Z'
-        return dateutil.parser.parse(earliest_timestamp)
+        return dateutil.parser.parse(timestamp)
 
     @classmethod
     def _get_log_entry(cls, eventId, timestamp):
@@ -377,6 +389,13 @@ class Event333(BaseCouchEventMock):
     }
 
 
+class EventEmpty(BaseCouchEventMock):
+    eventId = 444
+    dateAndTime = None
+
+    _resp_value = {}
+
+
 class User111(BaseCouchUserMock, BaseMongoUserMock):
     userId = 102137774477271133111
     givenName = 'John'
@@ -428,6 +447,13 @@ class User111(BaseCouchUserMock, BaseMongoUserMock):
                           '2016-03-03T16:59:58.835Z',
                           '2016-03-03T17:00:21.574Z',
                           '2016-03-03T18:02:34.475Z',
+                      ]),
+        MongoLogSetup(event_id=EventEmpty.eventId,
+                      join_timestamps_from_earliest=[
+                          '2016-02-28T15:58:56.186Z',
+                          '2016-02-28T16:59:58.835Z',
+                          '2016-02-28T17:00:21.574Z',
+                          '2016-02-28T18:02:34.475Z',
                       ]),
     ]
 
