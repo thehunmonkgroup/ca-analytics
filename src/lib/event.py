@@ -147,7 +147,7 @@ class CaEvent:
             #       change it to the last user leaving
             last_timestamp = self._event_participants.get_join_timestamps()[-1]
             self._end_time = last_timestamp
-            duration = self._end_time - self._start_time
+            duration = self._end_time - self.start_time
 
             log_handler = self._get_log_handler(
                 exception_key=(self.event_id, self._error_msg_end_time))
