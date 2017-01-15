@@ -51,7 +51,7 @@ class MongoData:
         :param date_to:
         :return:
         """
-
+        # TODO: Move date filtering to database
         def handle_both(date_from, date_to):
             ret_f = []
             date_from_orig = date_from

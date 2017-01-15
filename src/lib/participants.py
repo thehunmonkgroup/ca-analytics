@@ -1,6 +1,5 @@
 import inspect
 import logging
-import operator
 from collections import defaultdict, namedtuple
 
 import dateutil.parser
@@ -32,19 +31,12 @@ class EventParticipantsHandler:
 
     def get_participants(self):
         # TODO: return sorted by id default?
-        return list(self._participant_dict.values())
-
-    @property
-    def unique(self):
         sorting_key = Setts.ORDER_BY.participant_sort_keys
 
-        all_sorted = self.get_all_sorted(sort_key=sorting_key)
-
         # Dispose of all redundant participant logs, but leave first occurance
-        return sorted(set(all_sorted), key=sorting_key)
+        return sorted(self._participant_dict.values(), key=sorting_key)
 
-    @property
-    def all_participant_log_list(self):
+    def get_participant_log_list(self, log):
         """ Reconstruct log entries from MongoDB. """
         all_logs = []
         for ca_participant in self._participant_dict.values():
@@ -52,38 +44,27 @@ class EventParticipantsHandler:
             all_logs.extend(ca_participant.action_leave_list)
         return sorted(all_logs, key=lambda o: o.timestamp)
 
-    def get_join_timestamps(self, join_sort_key=None):
-        """
-        Return join timestamps in descending order, unless join_sort_key will
-          sort it differently.
+    @property
+    def join_timestamps(self):
+        """ Return joining timestamps earliest first. """
+        participant_join_timestamps = (
+            timestamps.join for timestamps
+            in self._get_participants_timestamps())
+        return sorted(participant_join_timestamps)
 
-        :param join_sort_key:
-        :return:
-        """
-        # TODO: Only joined!
-        join_sort_key = (join_sort_key or
-                         operator.attrgetter(Setts._OrderByOpt.OUR_JOIN_TIME))
+    @property
+    def leave_timestamps(self):
+        """ Return leaving timestamps earliest first. """
+        participant_join_timestamps = (
+            timestamps.leave for timestamps
+            in self._get_participants_timestamps())
+        return sorted(participant_join_timestamps)
 
-        participant_join_timestamps = tuple(
-            participant.timestamp for participant
-            in self.get_all_sorted(sort_key=join_sort_key))
+    def _get_participants_timestamps(self):
+        """ Return in/out user timestamps"""
+        participant_join_timestamps = (participant.timestamp for participant
+                                       in self._participant_dict.values())
         return participant_join_timestamps
-
-    def get_all_sorted(self, sort_key=Setts.ORDER_BY.participant_sort_keys):
-        """
-        Return deduplicated users with earliest time they joined an event and
-         sorted id ascending.
-
-        :return:
-        """
-        if not self.all_participant_log_list:
-            log.warning('Accessing uninitialized user dict')
-            return []
-        else:
-            # Sort two times. First so that set() will memorize first correct
-            #   object. Second cos set() is not preserving order.
-            all_sorted = sorted(self.all_participant_log_list, key=sort_key)
-            return all_sorted
 
 
 class CaParticipant:

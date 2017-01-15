@@ -157,7 +157,7 @@ class TestTimestamps(DbPatcherMixin, TestCase):
 
         # THEN
         ca_event = self.get_script_processed_data()[0]
-        timestamps = ca_event._participants_handler.get_join_timestamps()
+        timestamps = ca_event._participants_handler.join_timestamps
 
         event_start_time = ca_event.start_time
         first_participant_timestamp = timestamps[0]
@@ -176,7 +176,7 @@ class TestTimestamps(DbPatcherMixin, TestCase):
 
         # THEN
         ca_event = self.get_script_processed_data()[0]
-        timestamps = ca_event._participants_handler.get_join_timestamps()
+        timestamps = ca_event._participants_handler.join_timestamps
 
         event_end_time = ca_event.end_time
         last_participant_timestamp = timestamps[-1]

@@ -152,7 +152,7 @@ class BaseMongoUserMock(metaclass=ABCMeta):
 
     _LOG_TEMPLATE = {
         '_id': None,
-        'action': 'join',
+        'action': None,
         'connectedUsers': 0,
         'eventId': None,
         'level': 'info',
@@ -164,20 +164,26 @@ class BaseMongoUserMock(metaclass=ABCMeta):
     @classmethod
     def get_mongo_response(cls):
 
-        def get_logs_for_this_event(event_id, timestamps_list):
-            ret_ = []
-            for timestamp in timestamps_list:
-                entry = cls._get_log_entry(eventId=event_id,
-                                           timestamp=timestamp)
-                ret.append(entry)
-            return ret_
+        def get_logs_for_this_setup(l_setup):
+            def get_join_logs(timestamps):
+                return [cls._get_log_entry(eventId=event_id,
+                                           action='join',
+                                           timestamp=ts) for ts in timestamps]
+
+            def get_leave_logs(timestamps):
+                return [cls._get_log_entry(eventId=event_id,
+                                           action='leave',
+                                           timestamp=ts) for ts in timestamps]
+
+            event_id = l_setup.event_id
+
+            logs = get_join_logs(l_setup.join_timestamps_from_earliest)
+            logs.extend(get_leave_logs(l_setup.leave_timestamps_from_earliest))
+            return logs
 
         ret = []
         for log_setup in cls._participated_in:
-            log_entries = get_logs_for_this_event(
-                event_id=log_setup.event_id,
-                timestamps_list=log_setup.join_timestamps_from_earliest
-            )
+            log_entries = get_logs_for_this_setup(l_setup=log_setup)
             ret.extend(log_entries)
         return ret
 
@@ -208,7 +214,7 @@ class BaseMongoUserMock(metaclass=ABCMeta):
 
     @classmethod
     def get_leave_latest_timestamp(cls, event_id):
-        return cls._get_leave_timestamp(event_id=event_id, date_index=0)
+        return cls._get_leave_timestamp(event_id=event_id, date_index=-1)
 
     @classmethod
     def _get_leave_timestamp(cls, event_id, date_index=0):
@@ -225,32 +231,13 @@ class BaseMongoUserMock(metaclass=ABCMeta):
         except IndexError:
             return None
 
-    # @classmethod
-    # def get_earliest_timestamp(cls, event_id):
-    #     return cls._get_timestamp(event_id=event_id, date_index=0)
-    #
-    # @classmethod
-    # def get_latest_timestamp(cls, event_id):
-    #     return cls._get_timestamp(event_id=event_id, date_index=-1)
-    #
-    # @classmethod
-    # def _get_timestamp(cls, event_id, date_index=0):
-    #     """
-    #     :param event_id:
-    #     :param date_index: 0: earliest, -1: latest timestamp
-    #     :return:
-    #     """
-    #     event = [e for e in cls._participated_in if e.event_id == event_id][0]
-    #     timestamp = event.join_timestamps_from_earliest[date_index]
-    #     # earliest_timestamp = '2016-05-12T17:51:24.633Z'
-    #     return dateutil.parser.parse(timestamp)
-
     @classmethod
-    def _get_log_entry(cls, eventId, timestamp):
+    def _get_log_entry(cls, eventId, action, timestamp):
         ret = cls._LOG_TEMPLATE.copy()
         # TODO: Generate it
         ret['_id'] = ObjectId('57a3a39800c88030ca42d248')
         ret['userId'] = cls.userId
+        ret['action'] = action
         ret['eventId'] = eventId
         ret['timestamp'] = timestamp
         return ret

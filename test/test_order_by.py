@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 from unittest import TestCase
+from unittest import skip
 from unittest.mock import patch
 
 import ca_analytics
@@ -108,16 +109,17 @@ class TestOrderByEventsNotInDB(DbPatcherMixin, TestCase):
 
         # THEN
         ca_event = self.get_script_processed_data()[0]
-        timestamps = ca_event._participants_handler.get_join_timestamps()
+        timestamps = ca_event._participants_handler.join_timestamps
 
         event_start_time = ca_event.start_time
         first_participant_timestamp = timestamps[0]
 
         self.assertEqual(first_participant_timestamp, event_start_time)
 
-    def test_should_assign_last_join_timestamp_as_event_end(self):
+    def test_should_assign_last_leave_timestamp_as_event_end(self):
         # GIVEN
         expected_event = EventNoCouchData
+        expected_end_time = ''
 
         cli_cmd = '-e %s --order_by event_id' % expected_event.eventId
         cli_cmd = cli_cmd.split()
@@ -127,7 +129,7 @@ class TestOrderByEventsNotInDB(DbPatcherMixin, TestCase):
 
         # THEN
         ca_event = self.get_script_processed_data()[0]
-        timestamps = ca_event._participants_handler.get_join_timestamps()
+        timestamps = ca_event._participants_handler.leave_timestamps
 
         event_end_time = ca_event.end_time
         last_participant_timestamp = timestamps[-1]

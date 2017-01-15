@@ -115,7 +115,7 @@ class CaEvent:
         try:
             self._start_time = dateutil.parser.parse(raw_value)
         except AttributeError as e:
-            first_timestamp = self._participants_handler.get_join_timestamps()[0]
+            first_timestamp = self._participants_handler.join_timestamps[0]
             self._start_time = first_timestamp
 
             log_handler = self._get_log_handler(
@@ -145,7 +145,7 @@ class CaEvent:
         except TypeError as e:
             # TODO: When leave time will be implemented for the users,
             #       change it to the last user leaving
-            last_timestamp = self._participants_handler.get_join_timestamps()[-1]
+            last_timestamp = self._participants_handler.leave_timestamps[-1]
             self._end_time = last_timestamp
             duration = self._end_time - self.start_time
 

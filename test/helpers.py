@@ -198,8 +198,6 @@ class DbPatcherMixin:
             expected_user = [u for u in expected_events_users
                              if u.userId == user.user_id][0]
 
-            print('expected, user', expected_user.get_timestamp(event_id=event_id), user.timestamp)
-
             self.assertEqual(expected_user.userId, user.user_id)
             self.assertEqual(expected_user.display_name, user.display_name)
             self.assertEqual(
@@ -254,5 +252,5 @@ class DbPatcherMixin:
                                    get_all_users_attending_event(ca_event_id))
         sorted_participants = sorted(
             real_event_participants,
-            key=lambda x: x.get_earliest_timestamp(event_id=ca_event_id))
+            key=lambda x: x.get_join_earliest_timestamp(event_id=ca_event_id))
         return sorted_participants
