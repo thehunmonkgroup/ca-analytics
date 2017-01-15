@@ -254,3 +254,29 @@ class DbPatcherMixin:
             real_event_participants,
             key=lambda x: x.get_join_earliest_timestamp(event_id=ca_event_id))
         return sorted_participants
+
+    @classmethod
+    def get_events_first_user_timestamp(cls, event_class):
+        """
+        It takes leave timestamp only for the first user.
+
+        :param event_class:
+        :return:
+        """
+        # We need to get user(s) connected to that event.
+        users_connected_with_this_event = (
+            ResponseFactory.get_users_for_given_event_class(
+                event_list=[event_class]
+            ))
+
+        # Response from this function is indexed by the class :]
+        user_attending_the_event = (
+            users_connected_with_this_event[event_class][0])
+
+        # When we have user we don't need to go to all his logs.
+        # There is method getting latest leave time for us
+        expected_timestamp = (
+            user_attending_the_event.get_timestamp(
+                event_id=event_class.eventId
+            ))
+        return expected_timestamp
