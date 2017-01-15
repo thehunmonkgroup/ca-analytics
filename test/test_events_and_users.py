@@ -134,3 +134,96 @@ class TestEvent(DbPatcherMixin, TestCase):
                 expected_events_users=expected_users[expected_event],
                 event_id=expected_event.eventId
             )
+
+
+class TestTimestamps(DbPatcherMixin, TestCase):
+    def setUp(self):
+        self.patcher_output_handler = patch.object(ca_analytics,
+                                                   'OutputHandler')
+        self.mock_output_handler = self.patcher_output_handler.start()
+
+        super().setUp()
+
+    def test_should_return_none_when_no_leave_timestamp(self):
+        # GIVEN
+        expected_event = EventEmpty
+
+        cli_cmd = '-e %s --order_by event_id' % expected_event.eventId
+        cli_cmd = cli_cmd.split()
+
+        # WHEN
+        ca_analytics.main(start_cmd=cli_cmd)
+
+        # THEN
+        ca_event = self.get_script_processed_data()[0]
+        timestamps = ca_event._participants_handler.get_join_timestamps()
+
+        event_start_time = ca_event.start_time
+        first_participant_timestamp = timestamps[0]
+
+        self.assertEqual(first_participant_timestamp, event_start_time)
+
+    def test_should_assign_last_join_timestamp_as_event_end(self):
+        # GIVEN
+        expected_event = EventEmpty
+
+        cli_cmd = '-e %s --order_by event_id' % expected_event.eventId
+        cli_cmd = cli_cmd.split()
+
+        # WHEN
+        ca_analytics.main(start_cmd=cli_cmd)
+
+        # THEN
+        ca_event = self.get_script_processed_data()[0]
+        timestamps = ca_event._participants_handler.get_join_timestamps()
+
+        event_end_time = ca_event.end_time
+        last_participant_timestamp = timestamps[-1]
+
+        self.assertEqual(last_participant_timestamp, event_end_time)
+
+# class TestEventDates(DbPatcherMixin, TestCase):
+#     def setUp(self):
+#         self.patcher_output_handler = patch.object(ca_analytics,
+#                                                    'OutputHandler')
+#         self.mock_output_handler = self.patcher_output_handler.start()
+#
+#         super().setUp()
+#
+#     def test_should_assign_first_join_timestamp_as_event_start(self):
+#         # GIVEN
+#         expected_event = EventEmpty
+#
+#         cli_cmd = '-e %s --order_by event_id' % expected_event.eventId
+#         cli_cmd = cli_cmd.split()
+#
+#         # WHEN
+#         ca_analytics.main(start_cmd=cli_cmd)
+#
+#         # THEN
+#         ca_event = self.get_script_processed_data()[0]
+#         timestamps = ca_event._participants_handler.get_join_timestamps()
+#
+#         event_start_time = ca_event.start_time
+#         first_participant_timestamp = timestamps[0]
+#
+#         self.assertEqual(first_participant_timestamp, event_start_time)
+#
+#     def test_should_assign_last_join_timestamp_as_event_end(self):
+#         # GIVEN
+#         expected_event = EventEmpty
+#
+#         cli_cmd = '-e %s --order_by event_id' % expected_event.eventId
+#         cli_cmd = cli_cmd.split()
+#
+#         # WHEN
+#         ca_analytics.main(start_cmd=cli_cmd)
+#
+#         # THEN
+#         ca_event = self.get_script_processed_data()[0]
+#         timestamps = ca_event._participants_handler.get_join_timestamps()
+#
+#         event_end_time = ca_event.end_time
+#         last_participant_timestamp = timestamps[-1]
+#
+#         self.assertEqual(last_participant_timestamp, event_end_time)

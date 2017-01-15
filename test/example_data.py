@@ -35,7 +35,9 @@ class ClassProperty(property):
 
 
 MongoLogSetup = namedtuple('mongo_log_setup',
-                           ('event_id', 'join_timestamps_from_earliest'))
+                           ('event_id',
+                            'join_timestamps_from_earliest',
+                            'leave_timestamps_from_earliest'))
 
 
 class ObjectId:
@@ -389,11 +391,74 @@ class Event333(BaseCouchEventMock):
     }
 
 
-class EventEmpty(BaseCouchEventMock):
+class EventNoCouchData(BaseCouchEventMock):
     eventId = 444
     dateAndTime = None
 
     _resp_value = {}
+
+
+class EventIncompleteUsersTimestamps(BaseCouchEventMock):
+    eventId = 555
+    dateAndTime = '2016-08-08T17:00:00+00:00'
+
+    _resp_value = {
+        'timeZoneValue': 'Pacific/Honolulu',
+        'muteLock': False,
+        'duration': 60,
+        'adminProposedSessions': True,
+        'shortName': None,
+        'facilitatorLead': '113444444444448833443',
+        'facilitatorCo': '102137444444488443348',
+        'description': 'Whats alive in you NOW?',
+        'youtubeEmbed': None,
+        'overflowMessage': '',
+        'history': {
+            'event': {
+                '113445444444444443344': {'total': 3984434, 'start': None},
+                '108333444444444443344': {'total': 4224434, 'start': None},
+                '100958444444444443344': {'total': 4334434, 'start': None},
+                '113346444444444443344': {'total': 1034434, 'start': None},
+                '104470444444444443344': {'total': 4334434, 'start': None},
+                '102137444444444443344': {'total': 4334434, 'start': None},
+                '100143444444444443344': {'total': 4314434, 'start': None},
+                '116228444444444443344': {'total': 4334434, 'start': None},
+                '106432444444444443344': {'total': 4284434, 'start': None},
+                '108611444444444443344': {'total': 4334434, 'start': None},
+                '107452444444444443344': {'total': 3634434, 'start': None}},
+            'sessions': {
+                '1165': {'108333970581444444444': {'total': 11, 'start': None},
+                         '108611793445444444444': {'total': 7, 'start': None},
+                         '107452622478444444444': {'total': 1, 'start': None},
+                         '102137775077444444444': {'total': 2, 'start': None},
+                         '100143115762444444444': {'total': 5, 'start': None}},
+                '1164': {
+                    '113445281444444444444': {'total': 1334300, 'start': None},
+                    '108333971444444444444': {'total': 5, 'start': None},
+                    '102137771444444444444': {'total': 3, 'start': None},
+                    '104470311444444444444': {'total': 14, 'start': None},
+                    '100958091444444444444': {'total': 13, 'start': None},
+                    '100143111444444444444': {'total': 6, 'start': None},
+                    '116228711444444444444': {'total': 31, 'start': None},
+                    '106432111444444444444': {'total': 16, 'start': None},
+                    '108611791444444444444': {'total': 9, 'start': None}}}},
+        'calendarId': 'member',
+        'previousVideoEmbeds': [],
+        '_rev': '379-e7ece17fd61440dc09ba79888bad6326',
+        'conferenceOverride': '',
+        'dateAndTime': None,
+        'sessionProvider': 'google',
+        'admins': [{'id': '113445282448444443343'},
+                   {'id': '102137775444844443348'}],
+        'open': False,
+        'title': 'Circling', 'whiteboard': {
+            'message': "Welcome everyone to event 388! Please foo!"},
+        'sessionsOpen': True,
+        'overflowUserCap': 20,
+        'id': None,
+        '_id': None,
+        'organizer': 'none'
+    }
 
 
 class User111(BaseCouchUserMock, BaseMongoUserMock):
@@ -433,6 +498,9 @@ class User111(BaseCouchUserMock, BaseMongoUserMock):
                           '2016-05-12T17:50:35.528Z',
                           '2016-05-12T19:00:11.024Z',
                           '2016-05-12T19:01:16.784Z',
+                      ],
+                      leave_timestamps_from_earliest=[
+                          '2016-05-12T20:05:46.653Z',
                       ]),
         MongoLogSetup(event_id=Event222.eventId,
                       join_timestamps_from_earliest=[
@@ -440,6 +508,9 @@ class User111(BaseCouchUserMock, BaseMongoUserMock):
                           '2016-07-02T16:59:58.835Z',
                           '2016-07-02T17:00:21.574Z',
                           '2016-07-02T18:02:34.475Z',
+                      ],
+                      leave_timestamps_from_earliest=[
+                          '2016-07-02T18:05:26.843Z',
                       ]),
         MongoLogSetup(event_id=Event333.eventId,
                       join_timestamps_from_earliest=[
@@ -447,13 +518,19 @@ class User111(BaseCouchUserMock, BaseMongoUserMock):
                           '2016-03-03T16:59:58.835Z',
                           '2016-03-03T17:00:21.574Z',
                           '2016-03-03T18:02:34.475Z',
+                      ],
+                      leave_timestamps_from_earliest=[
+                          '2016-03-03T18:06:56.219Z',
                       ]),
-        MongoLogSetup(event_id=EventEmpty.eventId,
+        MongoLogSetup(event_id=EventNoCouchData.eventId,
                       join_timestamps_from_earliest=[
                           '2016-02-28T15:58:56.186Z',
                           '2016-02-28T16:59:58.835Z',
                           '2016-02-28T17:00:21.574Z',
                           '2016-02-28T18:02:34.475Z',
+                      ],
+                      leave_timestamps_from_earliest=[
+                          '2016-02-28T18:06:56.219Z',
                       ]),
     ]
 
@@ -491,11 +568,15 @@ class User222(BaseCouchUserMock, BaseMongoUserMock):
                           '2016-05-12T17:51:24.633Z',
                           '2016-05-12T19:01:01.030Z',
                           '2016-05-12T20:15:17.536Z',
+                      ],
+                      leave_timestamps_from_earliest=[
+                          '2016-05-12T20:04:16.753Z',
+                          '2016-05-12T20:16:11.913Z',
                       ]),
     ]
 
 
-class User_2016_07_02(BaseCouchUserMock, BaseMongoUserMock):
+class UserDateFilter(BaseCouchUserMock, BaseMongoUserMock):
     userId = 102137774470020160702
     givenName = 'Kevin'
     familyName = 'Foo'
@@ -568,5 +649,75 @@ class User_2016_07_02(BaseCouchUserMock, BaseMongoUserMock):
                           '2016-07-06T17:00:21.574Z',
                           '2016-07-06T18:02:34.475Z',
                           '2016-07-06T23:59:59.475Z',
+                      ],
+                      leave_timestamps_from_earliest=[
+                          '2016-07-01T00:01:00.186Z',
+                          '2016-07-01T16:59:58.186Z',
+                          '2016-07-01T17:02:21.574Z',
+                          '2016-07-01T19:02:34.475Z',
+                          '2016-07-01T23:59:34.475Z',
+
+                          '2016-07-02T00:01:00.186Z',
+                          '2016-07-02T17:00:11.574Z',
+                          '2016-07-02T18:00:35.475Z',
+                          '2016-07-02T19:59:59.475Z',
+
+                          '2016-07-03T00:01:00.186Z',
+                          '2016-07-03T17:00:56.186Z',
+                          '2016-07-03T19:02:34.475Z',
+                          '2016-07-03T23:59:59.475Z',
+
+                          '2016-07-04T00:01:00.186Z',
+                          '2016-07-04T17:01:21.574Z',
+                          '2016-07-04T18:02:34.475Z',
+                          '2016-07-04T23:59:59.675Z',
+
+                          '2016-07-05T00:00:01.186Z',
+                          '2016-07-05T17:00:21.574Z',
+                          '2016-07-05T19:02:34.475Z',
+                          '2016-07-05T23:59:59.975Z',
+
+                          '2016-07-06T00:00:01.186Z',
+                          '2016-07-06T17:00:21.574Z',
+                          '2016-07-06T19:02:34.475Z',
+                          '2016-07-06T23:59:59.485Z',
+                      ]),
+    ]
+
+
+class UserNoLeaveTimeLogs(BaseCouchUserMock, BaseMongoUserMock):
+    userId = 102137774470020160808
+    givenName = 'Alano'
+    familyName = 'Bar'
+    emails = [{'value': 'fake_alano@gmail.com'}]
+
+    _couch_value = {
+        'perms': {'joinEvents': False,
+                  'createEvents': True},
+        'picture': 'https://lh4.googleusercontent.com/-yI/phot2o.jpg',
+        'link': 'https://plus.google.com/+Buba',
+        '_rev': '96-7b43ab17f2c85079aee55d8a077c2a5b',
+        'provider': 'google',
+        'isPlusUser': True,
+        'admin': False,
+        'displayName': None,
+        '_id': None,
+        'name': None,
+        'preferredContact': {},
+        'emails': None,
+        'superuser': False,
+        'createdViaHangout': False,
+        'id': None,
+        'networkList': {'65': ['11434645354444776444'],
+                        '240': ['1087437344444477644446'],
+                        '86': ['100597781244447744644']},
+        'google_json': None
+    }
+
+    _participated_in = [
+        MongoLogSetup(event_id=EventIncompleteUsersTimestamps.eventId,
+                      join_timestamps_from_earliest=[
+                          '2016-08-08T17:01:21.574Z',
+                          '2016-08-08T17:05:32.243Z',
                       ]),
     ]

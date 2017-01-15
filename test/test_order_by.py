@@ -5,7 +5,7 @@ from unittest import TestCase
 from unittest.mock import patch
 
 import ca_analytics
-from example_data import Event111, Event222, Event333, EventEmpty
+from example_data import Event111, Event222, Event333, EventNoCouchData
 from helpers import DbPatcherMixin
 
 rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
@@ -88,6 +88,7 @@ class TestOrderByEventsPresentInDB(DbPatcherMixin, TestCase):
 
 
 class TestOrderByEventsNotInDB(DbPatcherMixin, TestCase):
+    # TODO: Is it not cloning tests from test_events_and_users ?
     def setUp(self):
         self.patcher_output_handler = patch.object(ca_analytics,
                                                    'OutputHandler')
@@ -97,7 +98,7 @@ class TestOrderByEventsNotInDB(DbPatcherMixin, TestCase):
 
     def test_should_assign_first_join_timestamp_as_event_start(self):
         # GIVEN
-        expected_event = EventEmpty
+        expected_event = EventNoCouchData
 
         cli_cmd = '-e %s --order_by event_id' % expected_event.eventId
         cli_cmd = cli_cmd.split()
@@ -116,7 +117,7 @@ class TestOrderByEventsNotInDB(DbPatcherMixin, TestCase):
 
     def test_should_assign_last_join_timestamp_as_event_end(self):
         # GIVEN
-        expected_event = EventEmpty
+        expected_event = EventNoCouchData
 
         cli_cmd = '-e %s --order_by event_id' % expected_event.eventId
         cli_cmd = cli_cmd.split()

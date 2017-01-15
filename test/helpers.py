@@ -4,7 +4,7 @@ import sys
 from unittest.mock import patch
 
 from example_data import Event111, Event222, Event333
-from example_data import User111, User222, User_2016_07_02
+from example_data import User111, User222, UserDateFilter
 from lib.database import MongoData, CouchData
 from lib.extras import Setts
 from lib.extras import make_iterable
@@ -21,7 +21,7 @@ class ResponseFactory:
     sample_users = [
         User111,
         User222,
-        User_2016_07_02,
+        UserDateFilter,
     ]
     sample_events = [
         Event111,
@@ -128,10 +128,6 @@ class DbPatcherMixin:
     # TODO: Join timestamp present, leave not, and the other way around
     # TODO: Event start/end time approximation when for ^those^ 4 cases
 
-    # TODO: Fail with: 00494, 00323: No event for id [00494] found in CouchDB
-    # TODO: Test for select event&user
-    # TODO: Test for show users' events
-    # TODO: Change name of test classes
     get_expected_users = ResponseFactory.get_users_for_given_event_class
 
     patcher_coach_get_data = patcher_coach_init = \
