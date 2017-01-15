@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 from unittest import TestCase
+from unittest import skip
 from unittest.mock import patch
 
 import ca_analytics
@@ -135,7 +136,7 @@ class TestEvent(DbPatcherMixin, TestCase):
                 event_id=expected_event.eventId
             )
 
-
+@skip('WIP')
 class TestTimestamps(DbPatcherMixin, TestCase):
     def setUp(self):
         self.patcher_output_handler = patch.object(ca_analytics,

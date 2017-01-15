@@ -11,6 +11,8 @@ from unittest.mock import MagicMock
 
 import dateutil
 
+from lib.participants import ParticipantTimestamp
+
 rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
 if rwd not in sys.path:
     sys.path.append(rwd)
@@ -145,7 +147,7 @@ class BaseCouchUserMock(metaclass=ABCMeta):
 
 class BaseMongoUserMock(metaclass=ABCMeta):
     userId = None
-    # Timestamps must be in ascending order
+    # Timestamps - earliest first
     _participated_in = []
 
     _LOG_TEMPLATE = {
@@ -180,24 +182,68 @@ class BaseMongoUserMock(metaclass=ABCMeta):
         return ret
 
     @classmethod
-    def get_earliest_timestamp(cls, event_id):
-        return cls._get_timestamp(event_id=event_id, date_index=0)
+    def get_timestamp(cls, event_id):
+        join = cls.get_join_earliest_timestamp(event_id=event_id)
+        leave = cls.get_leave_latest_timestamp(event_id=event_id)
+        return ParticipantTimestamp(join=join, leave=leave)
 
     @classmethod
-    def get_latest_timestamp(cls, event_id):
-        return cls._get_timestamp(event_id=event_id, date_index=-1)
+    def get_join_earliest_timestamp(cls, event_id):
+        return cls._get_join_timestamp(event_id=event_id, date_index=0)
 
     @classmethod
-    def _get_timestamp(cls, event_id, date_index=0):
+    def _get_join_timestamp(cls, event_id, date_index=0):
         """
         :param event_id:
         :param date_index: 0: earliest, -1: latest timestamp
         :return:
         """
         event = [e for e in cls._participated_in if e.event_id == event_id][0]
-        timestamp = event.join_timestamps_from_earliest[date_index]
-        # earliest_timestamp = '2016-05-12T17:51:24.633Z'
-        return dateutil.parser.parse(timestamp)
+        try:
+            timestamp = event.join_timestamps_from_earliest[date_index]
+            # earliest_timestamp = '2016-05-12T17:51:24.633Z'
+            return dateutil.parser.parse(timestamp)
+        except IndexError:
+            return None
+
+    @classmethod
+    def get_leave_latest_timestamp(cls, event_id):
+        return cls._get_leave_timestamp(event_id=event_id, date_index=0)
+
+    @classmethod
+    def _get_leave_timestamp(cls, event_id, date_index=0):
+        """
+        :param event_id:
+        :param date_index: 0: earliest, -1: latest timestamp
+        :return:
+        """
+        event = [e for e in cls._participated_in if e.event_id == event_id][0]
+        try:
+            timestamp = event.leave_timestamps_from_earliest[date_index]
+            # earliest_timestamp = '2016-05-12T17:51:24.633Z'
+            return dateutil.parser.parse(timestamp)
+        except IndexError:
+            return None
+
+    # @classmethod
+    # def get_earliest_timestamp(cls, event_id):
+    #     return cls._get_timestamp(event_id=event_id, date_index=0)
+    #
+    # @classmethod
+    # def get_latest_timestamp(cls, event_id):
+    #     return cls._get_timestamp(event_id=event_id, date_index=-1)
+    #
+    # @classmethod
+    # def _get_timestamp(cls, event_id, date_index=0):
+    #     """
+    #     :param event_id:
+    #     :param date_index: 0: earliest, -1: latest timestamp
+    #     :return:
+    #     """
+    #     event = [e for e in cls._participated_in if e.event_id == event_id][0]
+    #     timestamp = event.join_timestamps_from_earliest[date_index]
+    #     # earliest_timestamp = '2016-05-12T17:51:24.633Z'
+    #     return dateutil.parser.parse(timestamp)
 
     @classmethod
     def _get_log_entry(cls, eventId, timestamp):
@@ -719,5 +765,6 @@ class UserNoLeaveTimeLogs(BaseCouchUserMock, BaseMongoUserMock):
                       join_timestamps_from_earliest=[
                           '2016-08-08T17:01:21.574Z',
                           '2016-08-08T17:05:32.243Z',
-                      ]),
+                      ],
+                      leave_timestamps_from_earliest=[]),
     ]

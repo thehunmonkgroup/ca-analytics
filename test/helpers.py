@@ -191,18 +191,20 @@ class DbPatcherMixin:
 
     def check_if_users_valid(self, script_events_users, expected_events_users,
                              event_id):
-        self.assertEqual(len(script_events_users), len(expected_events_users))
+        self.assertEqual(len(expected_events_users), len(script_events_users))
 
         for user in script_events_users:
             # Dunno in which order it was added to sample data
             expected_user = [u for u in expected_events_users
                              if u.userId == user.user_id][0]
 
-            self.assertEqual(user.user_id, expected_user.userId)
-            self.assertEqual(user.display_name, expected_user.display_name)
+            print('expected, user', expected_user.get_timestamp(event_id=event_id), user.timestamp)
+
+            self.assertEqual(expected_user.userId, user.user_id)
+            self.assertEqual(expected_user.display_name, user.display_name)
             self.assertEqual(
-                user.timestamp.join,
-                expected_user.get_earliest_timestamp(event_id=event_id),
+                expected_user.get_timestamp(event_id=event_id),
+                user.timestamp,
                 msg='Timestamps mismatch. User was logged earlier!'
             )
 
