@@ -3,7 +3,8 @@ import os
 import sys
 from unittest.mock import patch
 
-from example_data import Event111, Event222, Event333
+from example_data import Event111, Event222, Event333, UserNoLeaveTimeLogs, \
+    UserNoJoinTimeLogs
 from example_data import User111, User222, UserDateFilter
 from lib.database import MongoData, CouchData
 from lib.extras import Setts
@@ -22,6 +23,8 @@ class ResponseFactory:
         User111,
         User222,
         UserDateFilter,
+        UserNoLeaveTimeLogs,
+        UserNoJoinTimeLogs,
     ]
     sample_events = [
         Event111,
@@ -128,8 +131,11 @@ class DbPatcherMixin:
     # TODO: Join timestamp present, leave not, and the other way around
     # TODO: Event start/end time approximation when for ^those^ 4 cases
 
+    # TODO: Split this class for mixins?
+
     get_expected_users = ResponseFactory.get_users_for_given_event_class
 
+    # Suppress IDE warnings
     patcher_coach_get_data = patcher_coach_init = \
         patcher_mongo_get_data = patcher_mongo_init = \
         mock_coach_get_data = mock_coach_init = \

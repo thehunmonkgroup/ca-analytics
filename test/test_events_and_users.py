@@ -7,7 +7,8 @@ from unittest.mock import patch
 
 import ca_analytics
 from ca_analytics import main
-from example_data import Event111, Event222, User111
+from example_data import Event111, Event222, User111, \
+    EventIncompleteUsersTimestamps, UserNoLeaveTimeLogs, UserNoJoinTimeLogs
 from helpers import ResponseFactory, DbPatcherMixin
 
 rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
@@ -136,7 +137,7 @@ class TestEvent(DbPatcherMixin, TestCase):
                 event_id=expected_event.eventId
             )
 
-@skip('WIP')
+
 class TestTimestamps(DbPatcherMixin, TestCase):
     def setUp(self):
         self.patcher_output_handler = patch.object(ca_analytics,
@@ -147,41 +148,57 @@ class TestTimestamps(DbPatcherMixin, TestCase):
 
     def test_should_return_none_when_no_leave_timestamp(self):
         # GIVEN
-        expected_event = EventEmpty
+        expected_user = UserNoLeaveTimeLogs
 
-        cli_cmd = '-e %s --order_by event_id' % expected_event.eventId
+        cli_cmd = '-u %s' % expected_user.userId
         cli_cmd = cli_cmd.split()
 
         # WHEN
         ca_analytics.main(start_cmd=cli_cmd)
 
         # THEN
-        ca_event = self.get_script_processed_data()[0]
-        timestamps = ca_event._participants_handler.join_timestamps
+        ca_events = self.get_script_processed_data()
+        participant = ca_events[0].event_participants()[0]
 
-        event_start_time = ca_event.start_time
-        first_participant_timestamp = timestamps[0]
+        self.assertIsNone(participant.timestamp.leave)
 
-        self.assertEqual(first_participant_timestamp, event_start_time)
-
-    def test_should_assign_last_join_timestamp_as_event_end(self):
+    def test_should_return_none_when_no_join_timestamp(self):
         # GIVEN
-        expected_event = EventEmpty
+        expected_user = UserNoJoinTimeLogs
 
-        cli_cmd = '-e %s --order_by event_id' % expected_event.eventId
+        cli_cmd = '-u %s' % expected_user.userId
         cli_cmd = cli_cmd.split()
 
         # WHEN
         ca_analytics.main(start_cmd=cli_cmd)
 
         # THEN
-        ca_event = self.get_script_processed_data()[0]
-        timestamps = ca_event._participants_handler.join_timestamps
+        ca_events = self.get_script_processed_data()
+        participant = ca_events[0].event_participants()[0]
 
-        event_end_time = ca_event.end_time
-        last_participant_timestamp = timestamps[-1]
+        self.assertIsNone(participant.timestamp.join)
 
-        self.assertEqual(last_participant_timestamp, event_end_time)
+    def test_should_assign_first_date_ever_for_no_event_in_db(self):
+        test_users = []
+
+    # def test_should_assign_last_join_timestamp_as_event_end(self):
+    #     # GIVEN
+    #     expected_event = EventEmpty
+    #
+    #     cli_cmd = '-e %s --order_by event_id' % expected_event.eventId
+    #     cli_cmd = cli_cmd.split()
+    #
+    #     # WHEN
+    #     ca_analytics.main(start_cmd=cli_cmd)
+    #
+    #     # THEN
+    #     ca_event = self.get_script_processed_data()[0]
+    #     timestamps = ca_event._participants_handler.join_timestamps
+    #
+    #     event_end_time = ca_event.end_time
+    #     last_participant_timestamp = timestamps[-1]
+    #
+    #     self.assertEqual(last_participant_timestamp, event_end_time)
 
 # class TestEventDates(DbPatcherMixin, TestCase):
 #     def setUp(self):

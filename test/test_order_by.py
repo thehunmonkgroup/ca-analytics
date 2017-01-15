@@ -93,6 +93,8 @@ class TestOrderByEventsNotInDB(DbPatcherMixin, TestCase):
 
     # TODO: Is it not cloning tests from test_events_and_users ?
 
+    # TODO: events now will take all_timestamps as first or last timestamp TEST
+
     def setUp(self):
         self.patcher_output_handler = patch.object(ca_analytics,
                                                    'OutputHandler')

@@ -748,10 +748,49 @@ class UserNoLeaveTimeLogs(BaseCouchUserMock, BaseMongoUserMock):
     }
 
     _participated_in = [
-        MongoLogSetup(event_id=EventIncompleteUsersTimestamps.eventId,
+        MongoLogSetup(event_id=123,
                       join_timestamps_from_earliest=[
                           '2016-08-08T17:01:21.574Z',
                           '2016-08-08T17:05:32.243Z',
                       ],
-                      leave_timestamps_from_earliest=[]),
+                      leave_timestamps_from_earliest=[])
+    ]
+
+
+class UserNoJoinTimeLogs(BaseCouchUserMock, BaseMongoUserMock):
+    userId = 102137774470020160899
+    givenName = 'Bazil'
+    familyName = 'Bars'
+    emails = [{'value': 'fake_bazil@gmail.com'}]
+
+    _couch_value = {
+        'perms': {'joinEvents': False,
+                  'createEvents': True},
+        'picture': 'https://lh4.googleusercontent.com/-yI/phot2o.jpg',
+        'link': 'https://plus.google.com/+Buba',
+        '_rev': '96-7b43ab17f2c85079aee55d8a077c2a5b',
+        'provider': 'google',
+        'isPlusUser': True,
+        'admin': False,
+        'displayName': None,
+        '_id': None,
+        'name': None,
+        'preferredContact': {},
+        'emails': None,
+        'superuser': False,
+        'createdViaHangout': False,
+        'id': None,
+        'networkList': {'65': ['11434645354444776444'],
+                        '240': ['1087437344444477644446'],
+                        '86': ['100597781244447744644']},
+        'google_json': None
+    }
+
+    _participated_in = [
+        MongoLogSetup(event_id=123,
+                      join_timestamps_from_earliest=[],
+                      leave_timestamps_from_earliest=[
+                          '2016-08-08T18:02:21.574Z',
+                          '2016-08-08T18:15:32.243Z',
+                      ]),
     ]
