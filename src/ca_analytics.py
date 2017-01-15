@@ -6,7 +6,6 @@ import logging
 import os
 import sys
 from os.path import join as j
-from pprint import pprint
 
 from lib.database import init_db
 from lib.engine import get_ca_event_list
@@ -41,9 +40,6 @@ def evaluate_arguments():
 
 
 def main(start_cmd=None):
-    # start_cmd = '-e 513 523 -u 104470315585625006456'.split()
-    # start_cmd = '-e 513 523'.split()
-    # start_cmd = ''.split()
     args, parser = configure_argparse(rwd=rwd, start_cmd=start_cmd)
 
     # Load default cfg
@@ -57,7 +53,7 @@ def main(start_cmd=None):
     evaluate_arguments()
 
 
-version = {'y': 2017, 'm': 1, 'd': 11}
+version = {'y': 2017, 'm': 1, 'd': 15}
 __version__ = '{y}.{m}.{d}'.format(**version)
 
 if __name__ == '__main__':

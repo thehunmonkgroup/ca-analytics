@@ -194,6 +194,17 @@ class BaseMongoUserMock(metaclass=ABCMeta):
         return ParticipantTimestamp(join=join, leave=leave)
 
     @classmethod
+    def get_all_seen_timestamps(cls, event_id):
+        # TODO: Refactor out event
+        event = [e for e in cls._participated_in if e.event_id == event_id][0]
+
+        joined_timestamps = event.join_timestamps_from_earliest
+        leave_timestamps = event.leave_timestamps_from_earliest
+        asd = (dateutil.parser.parse(ts) for ts
+               in joined_timestamps + leave_timestamps)
+        return sorted(asd)
+
+    @classmethod
     def get_join_earliest_timestamp(cls, event_id):
         return cls._get_join_timestamp(event_id=event_id, date_index=0)
 
@@ -792,5 +803,97 @@ class UserNoJoinTimeLogs(BaseCouchUserMock, BaseMongoUserMock):
                       leave_timestamps_from_earliest=[
                           '2016-08-08T18:02:21.574Z',
                           '2016-08-08T18:15:32.243Z',
+                      ]),
+    ]
+
+
+class UserFirstLastSeenDatesAreJoin(BaseCouchUserMock, BaseMongoUserMock):
+    userId = 102137774470020160900
+    givenName = 'Bazil'
+    familyName = 'Bars'
+    emails = [{'value': 'fake_bazil@gmail.com'}]
+
+    _couch_value = {
+        'perms': {'joinEvents': False,
+                  'createEvents': True},
+        'picture': 'https://lh4.googleusercontent.com/-yI/phot2o.jpg',
+        'link': 'https://plus.google.com/+Buba',
+        '_rev': '96-7b43ab17f2c85079aee55d8a077c2a5b',
+        'provider': 'google',
+        'isPlusUser': True,
+        'admin': False,
+        'displayName': None,
+        '_id': None,
+        'name': None,
+        'preferredContact': {},
+        'emails': None,
+        'superuser': False,
+        'createdViaHangout': False,
+        'id': None,
+        'networkList': {'65': ['11434645354444776444'],
+                        '240': ['1087437344444477644446'],
+                        '86': ['100597781244447744644']},
+        'google_json': None
+    }
+
+    _participated_in = [
+        MongoLogSetup(event_id=123,
+                      join_timestamps_from_earliest=[
+                          '2016-08-08T11:05:10.574Z',
+                          '2016-08-08T15:06:35.574Z',
+                          '2016-08-08T16:12:41.574Z',
+                          '2016-08-08T21:20:00.243Z',
+                      ],
+                      leave_timestamps_from_earliest=[
+                          '2016-08-08T12:05:10.574Z',
+                          '2016-08-08T15:06:35.574Z',
+                          '2016-08-08T18:12:41.574Z',
+                          '2016-08-08T20:20:00.243Z',
+                      ]),
+    ]
+
+
+class UserFirstLastSeenDatesAreLeave(BaseCouchUserMock, BaseMongoUserMock):
+    userId = 102137774470020160901
+    givenName = 'Bazil'
+    familyName = 'Bars'
+    emails = [{'value': 'fake_bazil@gmail.com'}]
+
+    _couch_value = {
+        'perms': {'joinEvents': False,
+                  'createEvents': True},
+        'picture': 'https://lh4.googleusercontent.com/-yI/phot2o.jpg',
+        'link': 'https://plus.google.com/+Buba',
+        '_rev': '96-7b43ab17f2c85079aee55d8a077c2a5b',
+        'provider': 'google',
+        'isPlusUser': True,
+        'admin': False,
+        'displayName': None,
+        '_id': None,
+        'name': None,
+        'preferredContact': {},
+        'emails': None,
+        'superuser': False,
+        'createdViaHangout': False,
+        'id': None,
+        'networkList': {'65': ['11434645354444776444'],
+                        '240': ['1087437344444477644446'],
+                        '86': ['100597781244447744644']},
+        'google_json': None
+    }
+
+    _participated_in = [
+        MongoLogSetup(event_id=123,
+                      join_timestamps_from_earliest=[
+                          '2016-08-08T13:05:10.574Z',
+                          '2016-08-08T15:06:35.574Z',
+                          '2016-08-08T16:12:41.574Z',
+                          '2016-08-08T17:20:00.243Z',
+                      ],
+                      leave_timestamps_from_earliest=[
+                          '2016-08-08T12:05:10.574Z',
+                          '2016-08-08T15:06:35.574Z',
+                          '2016-08-08T18:12:41.574Z',
+                          '2016-08-08T18:20:00.243Z',
                       ]),
     ]

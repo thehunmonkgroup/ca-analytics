@@ -4,7 +4,8 @@ import sys
 from unittest.mock import patch
 
 from example_data import Event111, Event222, Event333, UserNoLeaveTimeLogs, \
-    UserNoJoinTimeLogs
+    UserNoJoinTimeLogs, UserFirstLastSeenDatesAreLeave, \
+    UserFirstLastSeenDatesAreJoin
 from example_data import User111, User222, UserDateFilter
 from lib.database import MongoData, CouchData
 from lib.extras import Setts
@@ -25,6 +26,8 @@ class ResponseFactory:
         UserDateFilter,
         UserNoLeaveTimeLogs,
         UserNoJoinTimeLogs,
+        UserFirstLastSeenDatesAreJoin,
+        UserFirstLastSeenDatesAreLeave,
     ]
     sample_events = [
         Event111,
