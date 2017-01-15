@@ -36,7 +36,7 @@ class EventParticipantsHandler:
         # Dispose of all redundant participant logs, but leave first occurance
         return sorted(self._participant_dict.values(), key=sorting_key)
 
-    def get_participant_log_list(self, log):
+    def get_participant_log_list(self):
         """ Reconstruct log entries from MongoDB. """
         all_logs = []
         for ca_participant in self._participant_dict.values():
@@ -46,21 +46,37 @@ class EventParticipantsHandler:
 
     @property
     def join_timestamps(self):
-        """ Return joining timestamps earliest first. """
+        """ Return joining timestamps one per user earliest first. """
         participant_join_timestamps = (
             timestamps.join for timestamps
             in self._get_participants_timestamps())
-        return sorted(participant_join_timestamps)
+        cleaned_join_timestamps = [ts for ts in participant_join_timestamps
+                                   if ts]
+        return sorted(cleaned_join_timestamps)
 
     @property
     def leave_timestamps(self):
-        """ Return leaving timestamps earliest first. """
+        """ Return leaving timestamps one per user earliest first. """
         participant_join_timestamps = (
             timestamps.leave for timestamps
             in self._get_participants_timestamps())
-        return sorted(participant_join_timestamps)
+        cleaned_leave_timestamps = [ts for ts in participant_join_timestamps
+                                    if ts]
+        return sorted(cleaned_leave_timestamps)
+
+    @property
+    def all_timestamps(self):
+        """ All possible timestamps seen for this event. """
+        all_logs = self.get_participant_log_list()
+        return sorted(each.timestamp for each in all_logs)
 
     def _get_participants_timestamps(self):
+        """ Return in/out user timestamps"""
+        participant_join_timestamps = (participant.timestamp for participant
+                                       in self._participant_dict.values())
+        return participant_join_timestamps
+
+    def _get_participants_all_timestamps(self):
         """ Return in/out user timestamps"""
         participant_join_timestamps = (participant.timestamp for participant
                                        in self._participant_dict.values())
@@ -77,7 +93,7 @@ class CaParticipant:
     _ACTION_LEAVE = 'leave'
 
     _str_templ = 'User: [%s] - [%s], Joined/Left: [%s] / [%s]'
-    _repr_templ = 'User@event [%s]@[%s] jumped in [%s]/[%s] out times'
+    _repr_templ = 'user@event [%s]@[%s] jumped in [%s]/[%s] out times'
     _error_msg_change = (
         'Tried to change [%s] of the user [%s]! [%s]->[%s]. '
         'This should never happen. Statistics may be corrupted.'
