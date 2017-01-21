@@ -22,7 +22,7 @@ STRFTIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 CSV_FIELDNAMES = ('Event ID', 'Description',
                   'Calendar ID', 'Start time',
                   'End time', 'User ID',
-                  'User name', 'Joined')
+                  'User name', 'Joined', 'Left')
 
 
 def make_iterable(evnt_ids='None', usr_ids='None'):
@@ -88,13 +88,6 @@ class OutputHandler:
     def write_csv(self, f_path):
         f_path = norm_path(f_path, mkfile=False, mkdir=False)
 
-        def create_writer(f, fieldnames):
-            writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES,
-                                    extrasaction='ignore',
-                                    quoting=csv.QUOTE_NONNUMERIC)
-            writer.writeheader()
-            return writer
-
         with open(f_path, 'w') as f:
             print('* Exporting as: "%s"' % f_path)
             writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES,
@@ -107,6 +100,7 @@ class OutputHandler:
                     event_dict['User ID'] = user['User ID']
                     event_dict['User name'] = user['User name']
                     event_dict['Joined'] = user['Joined']
+                    event_dict['Left'] = user['Left']
                     writer.writerow(event_dict)
             print('* Done')
 
@@ -128,7 +122,7 @@ class OutputHandler:
                'Start time': event.start_time_str,
                'End time': event.end_time_str}
         users = [{'User ID': user.user_id, 'User name': user.display_name,
-                  'Joined': user.timestamp_str}
+                  'Joined': user.timestamp_str.join, 'Left': user.timestamp_str.leave }
                  for user in event.event_participants()]
         out['Users'] = users
         return out
