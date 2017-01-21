@@ -117,12 +117,15 @@ class OutputHandler:
 
     @classmethod
     def convert_to_dictionary(cls, event):
-        out = {'Event ID': event.event_id, 'Description': event.description,
+        out = {'Event ID': event.event_id,
+               'Description': event.description,
                'Calendar ID': event.calendar_id,
                'Start time': event.start_time_str,
                'End time': event.end_time_str}
-        users = [{'User ID': user.user_id, 'User name': user.display_name,
-                  'Joined': user.timestamp_str.join, 'Left': user.timestamp_str.leave }
+        users = [{'User ID': user.user_id,
+                  'User name': user.display_name,
+                  'Joined': user.timestamp_str.join,
+                  'Left': user.timestamp_str.leave}
                  for user in event.event_participants()]
         out['Users'] = users
         return out
