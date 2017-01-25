@@ -19,10 +19,10 @@ is_string = lambda val: isinstance(val, str)
 is_iterable = lambda val: isinstance(val, collections.Iterable)
 # TODO: Create base CaClass, place it there and add err silencing there too
 STRFTIME_FORMAT = '%Y-%m-%d %H:%M:%S'
-CSV_FIELDNAMES = ('Event ID', 'Description',
-                  'Calendar ID', 'Start time',
-                  'End time', 'User ID',
-                  'User name', 'Joined')
+CSV_FIELDNAMES = ('Event_ID', 'Description',
+                  'Calendar_ID', 'Start_time',
+                  'End_time', 'User_ID',
+                  'User_name', 'Join_time', 'Leave_time')
 
 
 def make_iterable(evnt_ids='None', usr_ids='None'):
@@ -88,13 +88,6 @@ class OutputHandler:
     def write_csv(self, f_path):
         f_path = norm_path(f_path, mkfile=False, mkdir=False)
 
-        def create_writer(f, fieldnames):
-            writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES,
-                                    extrasaction='ignore',
-                                    quoting=csv.QUOTE_NONNUMERIC)
-            writer.writeheader()
-            return writer
-
         with open(f_path, 'w') as f:
             print('* Exporting as: "%s"' % f_path)
             writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES,
@@ -104,9 +97,10 @@ class OutputHandler:
             for each_ca_event in self._ca_events_list:
                 event_dict = self.convert_to_dictionary(each_ca_event)
                 for user in event_dict['Users']:
-                    event_dict['User ID'] = user['User ID']
-                    event_dict['User name'] = user['User name']
-                    event_dict['Joined'] = user['Joined']
+                    event_dict['User_ID'] = user['User_ID']
+                    event_dict['User_name'] = user['User_name']
+                    event_dict['Join_time'] = user['Join_time']
+                    event_dict['Leave_time'] = user['Leave_time']
                     writer.writerow(event_dict)
             print('* Done')
 
@@ -123,12 +117,15 @@ class OutputHandler:
 
     @classmethod
     def convert_to_dictionary(cls, event):
-        out = {'Event ID': event.event_id, 'Description': event.description,
-               'Calendar ID': event.calendar_id,
-               'Start time': event.start_time_str,
-               'End time': event.end_time_str}
-        users = [{'User ID': user.user_id, 'User name': user.display_name,
-                  'Joined': user.timestamp_str}
+        out = {'Event_ID': event.event_id,
+               'Description': event.description,
+               'Calendar_ID': event.calendar_id,
+               'Start_time': event.start_time_str,
+               'End_time': event.end_time_str}
+        users = [{'User_ID': user.user_id,
+                  'User_name': user.display_name,
+                  'Join_time': user.timestamp_str.join,
+                  'Leave_time': user.timestamp_str.leave}
                  for user in event.event_participants()]
         out['Users'] = users
         return out

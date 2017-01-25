@@ -5,7 +5,7 @@ from unittest import TestCase
 from unittest.mock import patch
 
 import ca_analytics
-from example_data import Event111, Event222, Event333, EventEmpty
+from example_data import Event111, Event222, Event333, EventNoCouchData
 from helpers import DbPatcherMixin
 
 rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
@@ -88,6 +88,13 @@ class TestOrderByEventsPresentInDB(DbPatcherMixin, TestCase):
 
 
 class TestOrderByEventsNotInDB(DbPatcherMixin, TestCase):
+    # Maybe this is not strictly unit test, cos it checks user timestamp and
+    #   event start/end time at the same time if those matches example data
+
+    # TODO: Is it not cloning tests from test_events_and_users ?
+
+    # TODO: events now will take all_timestamps as first or last timestamp TEST
+
     def setUp(self):
         self.patcher_output_handler = patch.object(ca_analytics,
                                                    'OutputHandler')
@@ -97,9 +104,11 @@ class TestOrderByEventsNotInDB(DbPatcherMixin, TestCase):
 
     def test_should_assign_first_join_timestamp_as_event_start(self):
         # GIVEN
-        expected_event = EventEmpty
+        expected_event = EventNoCouchData
+        expected_start_time = self.get_events_first_user_timestamp(
+            EventNoCouchData).join
 
-        cli_cmd = '-e %s --order_by event_id' % expected_event.eventId
+        cli_cmd = '-e %s' % expected_event.eventId
         cli_cmd = cli_cmd.split()
 
         # WHEN
@@ -107,18 +116,21 @@ class TestOrderByEventsNotInDB(DbPatcherMixin, TestCase):
 
         # THEN
         ca_event = self.get_script_processed_data()[0]
-        timestamps = ca_event._event_participants.get_join_timestamps()
+        timestamps = ca_event._participants_handler.join_timestamps
 
         event_start_time = ca_event.start_time
         first_participant_timestamp = timestamps[0]
 
-        self.assertEqual(first_participant_timestamp, event_start_time)
+        self.assertEqual(expected_start_time, event_start_time)
+        self.assertEqual(expected_start_time, first_participant_timestamp)
 
-    def test_should_assign_last_join_timestamp_as_event_end(self):
+    def test_should_assign_last_leave_timestamp_as_event_end(self):
         # GIVEN
-        expected_event = EventEmpty
+        expected_event = EventNoCouchData
+        expected_end_time = self.get_events_first_user_timestamp(
+            EventNoCouchData).leave
 
-        cli_cmd = '-e %s --order_by event_id' % expected_event.eventId
+        cli_cmd = '-e %s' % expected_event.eventId
         cli_cmd = cli_cmd.split()
 
         # WHEN
@@ -126,9 +138,10 @@ class TestOrderByEventsNotInDB(DbPatcherMixin, TestCase):
 
         # THEN
         ca_event = self.get_script_processed_data()[0]
-        timestamps = ca_event._event_participants.get_join_timestamps()
+        timestamps = ca_event._participants_handler.leave_timestamps
 
         event_end_time = ca_event.end_time
         last_participant_timestamp = timestamps[-1]
 
-        self.assertEqual(last_participant_timestamp, event_end_time)
+        self.assertEqual(expected_end_time, last_participant_timestamp)
+        self.assertEqual(expected_end_time, event_end_time)

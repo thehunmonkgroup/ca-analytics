@@ -3,8 +3,10 @@ import os
 import sys
 from unittest.mock import patch
 
-from example_data import Event111, Event222, Event333
-from example_data import User111, User222, User_2016_07_02
+from example_data import Event111, Event222, Event333, UserNoLeaveTimeLogs, \
+    UserNoJoinTimeLogs, UserFirstLastSeenDatesAreLeave, \
+    UserFirstLastSeenDatesAreJoin
+from example_data import User111, User222, UserDateFilter
 from lib.database import MongoData, CouchData
 from lib.extras import Setts
 from lib.extras import make_iterable
@@ -21,7 +23,11 @@ class ResponseFactory:
     sample_users = [
         User111,
         User222,
-        User_2016_07_02,
+        UserDateFilter,
+        UserNoLeaveTimeLogs,
+        UserNoJoinTimeLogs,
+        UserFirstLastSeenDatesAreJoin,
+        UserFirstLastSeenDatesAreLeave,
     ]
     sample_events = [
         Event111,
@@ -125,12 +131,14 @@ class ResponseFactory:
 
 
 class DbPatcherMixin:
-    # TODO: Fail with: 00494, 00323: No event for id [00494] found in CouchDB
-    # TODO: Test for select event&user
-    # TODO: Test for show users' events
-    # TODO: Change name of test classes
+    # TODO: Join timestamp present, leave not, and the other way around
+    # TODO: Event start/end time approximation when for ^those^ 4 cases
+
+    # TODO: Split this class for mixins?
+
     get_expected_users = ResponseFactory.get_users_for_given_event_class
 
+    # Suppress IDE warnings
     patcher_coach_get_data = patcher_coach_init = \
         patcher_mongo_get_data = patcher_mongo_init = \
         mock_coach_get_data = mock_coach_init = \
@@ -192,18 +200,18 @@ class DbPatcherMixin:
 
     def check_if_users_valid(self, script_events_users, expected_events_users,
                              event_id):
-        self.assertEqual(len(script_events_users), len(expected_events_users))
+        self.assertEqual(len(expected_events_users), len(script_events_users))
 
         for user in script_events_users:
             # Dunno in which order it was added to sample data
             expected_user = [u for u in expected_events_users
                              if u.userId == user.user_id][0]
 
-            self.assertEqual(user.user_id, expected_user.userId)
-            self.assertEqual(user.display_name, expected_user.display_name)
+            self.assertEqual(expected_user.userId, user.user_id)
+            self.assertEqual(expected_user.display_name, user.display_name)
             self.assertEqual(
+                expected_user.get_timestamp(event_id=event_id),
                 user.timestamp,
-                expected_user.get_earliest_timestamp(event_id=event_id),
                 msg='Timestamps mismatch. User was logged earlier!'
             )
 
@@ -253,5 +261,31 @@ class DbPatcherMixin:
                                    get_all_users_attending_event(ca_event_id))
         sorted_participants = sorted(
             real_event_participants,
-            key=lambda x: x.get_earliest_timestamp(event_id=ca_event_id))
+            key=lambda x: x.get_join_earliest_timestamp(event_id=ca_event_id))
         return sorted_participants
+
+    @classmethod
+    def get_events_first_user_timestamp(cls, event_class):
+        """
+        It takes leave timestamp only for the first user.
+
+        :param event_class:
+        :return:
+        """
+        # We need to get user(s) connected to that event.
+        users_connected_with_this_event = (
+            ResponseFactory.get_users_for_given_event_class(
+                event_list=[event_class]
+            ))
+
+        # Response from this function is indexed by the class :]
+        user_attending_the_event = (
+            users_connected_with_this_event[event_class][0])
+
+        # When we have user we don't need to go to all his logs.
+        # There is method getting latest leave time for us
+        expected_timestamp = (
+            user_attending_the_event.get_timestamp(
+                event_id=event_class.eventId
+            ))
+        return expected_timestamp

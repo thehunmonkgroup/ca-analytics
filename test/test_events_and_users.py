@@ -6,7 +6,15 @@ from unittest.mock import patch
 
 import ca_analytics
 from ca_analytics import main
-from example_data import Event111, Event222, User111
+from example_data import (
+    Event111,
+    Event222,
+    User111,
+    UserNoLeaveTimeLogs,
+    UserNoJoinTimeLogs,
+    UserFirstLastSeenDatesAreLeave,
+    UserFirstLastSeenDatesAreJoin,
+)
 from helpers import ResponseFactory, DbPatcherMixin
 
 rwd = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
@@ -134,3 +142,87 @@ class TestEvent(DbPatcherMixin, TestCase):
                 expected_events_users=expected_users[expected_event],
                 event_id=expected_event.eventId
             )
+
+
+class TestTimestamps(DbPatcherMixin, TestCase):
+    _test_users = [UserFirstLastSeenDatesAreJoin,
+                   UserFirstLastSeenDatesAreLeave]
+
+    def setUp(self):
+        self.patcher_output_handler = patch.object(ca_analytics,
+                                                   'OutputHandler')
+        self.mock_output_handler = self.patcher_output_handler.start()
+
+        super().setUp()
+
+    def test_should_return_none_when_no_leave_timestamp(self):
+        # GIVEN
+        expected_user = UserNoLeaveTimeLogs
+
+        cli_cmd = '-u %s' % expected_user.userId
+        cli_cmd = cli_cmd.split()
+
+        # WHEN
+        ca_analytics.main(start_cmd=cli_cmd)
+
+        # THEN
+        ca_events = self.get_script_processed_data()
+        participant = ca_events[0].event_participants()[0]
+
+        self.assertIsNone(participant.timestamp.leave)
+
+    def test_should_return_none_when_no_join_timestamp(self):
+        # GIVEN
+        expected_user = UserNoJoinTimeLogs
+
+        cli_cmd = '-u %s' % expected_user.userId
+        cli_cmd = cli_cmd.split()
+
+        # WHEN
+        ca_analytics.main(start_cmd=cli_cmd)
+
+        # THEN
+        ca_events = self.get_script_processed_data()
+        participant = ca_events[0].event_participants()[0]
+
+        self.assertIsNone(participant.timestamp.join)
+
+    def test_should_assign_first_date_seen_as_start_if_no_event_in_db(self):
+        event_id = 123
+        # GIVEN
+        for test_participant in self._test_users:
+            cli_cmd = '-u %s' % test_participant.userId
+            cli_cmd = cli_cmd.split()
+
+            # WHEN
+            ca_analytics.main(start_cmd=cli_cmd)
+
+            # THEN
+            ca_events = self.get_script_processed_data()
+            event = ca_events[0]
+
+            all_seen_timestamps = (
+                test_participant.get_all_seen_timestamps(event_id=event_id))
+            expected_start_date = all_seen_timestamps[0]
+
+            self.assertEqual(expected_start_date, event.start_time)
+
+    def test_should_assign_last_date_seen_as_end_time_if_no_event_in_db(self):
+        event_id = 123
+        # GIVEN
+        for test_participant in self._test_users:
+            cli_cmd = '-u %s' % test_participant.userId
+            cli_cmd = cli_cmd.split()
+
+            # WHEN
+            ca_analytics.main(start_cmd=cli_cmd)
+
+            # THEN
+            ca_events = self.get_script_processed_data()
+            event = ca_events[0]
+
+            all_seen_timestamps = (
+                test_participant.get_all_seen_timestamps(event_id=event_id))
+            expected_end_date = all_seen_timestamps[-1]
+
+            self.assertEqual(expected_end_date, event.end_time)

@@ -17,7 +17,7 @@ def get_ca_event_list(selected_logs):
                              'message': 'events',
                              'timestamp': '2016-05-26T16:37:46.106Z',
                              'connectedUsers': 5,
-                             'action': 'join',
+                             'action': 'join'|'leave',
                              '_id': ObjectId('57a3a39800c88030ca43b777')},
                              {..},
                              {..},
@@ -32,7 +32,7 @@ def get_ca_event_list(selected_logs):
         except KeyError:
             ca_event = CaEvent(event_id=event_id)
             ca_events_holder[event_id] = ca_event
-        ca_event.add(log_entry=log_entry)
+        ca_event.add_participant(log_entry=log_entry)
 
     Setts.details_provider.get_details_from_db()
 

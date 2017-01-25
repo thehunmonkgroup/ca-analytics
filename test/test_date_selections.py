@@ -8,7 +8,7 @@ import dateutil.parser
 
 import ca_analytics
 from ca_analytics import main
-from example_data import User_2016_07_02
+from example_data import UserDateFilter
 from helpers import DbPatcherMixin
 from lib.database import MongoData
 
@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 
 class TestDateFilter(DbPatcherMixin, TestCase):
-    DATE_TEST_USER_ID = User_2016_07_02.userId
+    DATE_TEST_USER_ID = UserDateFilter.userId
     CMD_TEST_DATE = '-u %s ' % DATE_TEST_USER_ID
 
     def setUp(self):
