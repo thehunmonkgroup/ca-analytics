@@ -95,13 +95,19 @@ class OutputHandler:
                                     quoting=csv.QUOTE_NONNUMERIC)
             writer.writeheader()
             for each_ca_event in self._ca_events_list:
-                event_dict = self.convert_to_dictionary(each_ca_event)
-                for user in event_dict['Users']:
-                    event_dict['User_ID'] = user['User_ID']
-                    event_dict['User_name'] = user['User_name']
-                    event_dict['Join_time'] = user['Join_time']
-                    event_dict['Leave_time'] = user['Leave_time']
-                    writer.writerow(event_dict)
+                try:
+                    event_dict = self.convert_to_dictionary(each_ca_event)
+                    for user in event_dict['Users']:
+                        event_dict['User_ID'] = user['User_ID']
+                        event_dict['User_name'] = user['User_name']
+                        event_dict['Join_time'] = user['Join_time']
+                        event_dict['Leave_time'] = user['Leave_time']
+                        writer.writerow(event_dict)
+                except Exception as e:
+                    log.exception(
+                        'Encountered error while exporting event [%s] to csv. '
+                        'Skipping that row. Original error: "%s"',
+                        each_ca_event.event_id, e)
             print('* Done')
 
     def write_json(self, f_path):
