@@ -104,6 +104,7 @@ class OutputHandler:
                         event_dict['Leave_time'] = user['Leave_time']
                         writer.writerow(event_dict)
                 except Exception as e:
+                    # TODO: Skipping that row(s)
                     log.error(
                         'Encountered error while exporting event [%s] to csv. '
                         'Skipping that row. Caused by: "%s"',
